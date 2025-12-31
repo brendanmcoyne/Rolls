@@ -22,7 +22,7 @@ const SlotBox = styled.div<SlotProps>`
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    transition: 0.5s;
+    transition: 0.1s;
     &:hover {
         transform: scale(1.05);
     }
@@ -38,6 +38,7 @@ const Button = styled.button<ButtonProps>`
     background-color: ${(p) => (p.red ? "#dc2626" : "#2563eb")};
     &:hover {
         background-color: ${(p) => (p.red ? "#b91c1c" : "#1d4ed8")};
+        border: 1px solid black;
     }
 `;
 
