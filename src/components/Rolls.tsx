@@ -1,7 +1,7 @@
 import { useState } from "react";
 import styled from "styled-components";
 
-const IMAGES = Array.from({ length: 40 }, (_, i) => `/${i + 1}.jpg`);
+const IMAGES = Array.from({ length: 140 }, (_, i) => `/${i + 1}.jpg`);
 
 interface ButtonProps {
     red?: boolean;
@@ -50,7 +50,6 @@ const Page = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 24px;
 `;
 
 const Title = styled.h1`
@@ -70,14 +69,14 @@ const Grid = styled.div`
 `;
 
 const SlotImage = styled.img`
-  width: 260px;
-  height: 260px;
-  object-fit: cover;
+    width: 260px;
+    height: 260px;
+    object-fit: cover;
 `;
 
 const ButtonRow = styled.div`
-  display: flex;
-  gap: 16px;
+    display: flex;
+    gap: 16px;
     margin-top: 20px;
 `;
 

@@ -7,50 +7,50 @@ import Rolls from "./components/Rolls";
 type User = { id: number; email: string; name: string; picture?: string | null };
 
 const Page = styled.div`
-  min-height: 100vh;
-  width: 100%;
-  background-color: #111827;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px;
+    min-height: 100vh;
+    width: 100%;
+    background-color: #111827;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
 `;
 
 const LoginPage = styled.div`
-  min-height: 100vh;
-  width: 100%;
-  background-color: #111827;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  gap: 16px;
+    min-height: 100vh;
+    width: 100%;
+    background-color: #111827;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    gap: 16px;
 `;
 
 const Button = styled.button`
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
 `;
 
 const TopBar = styled.div`
-  width: 100%;
-  max-width: 900px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+    width: 100%;
+    max-width: 1800px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0;
 `;
 
 const UserBox = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 `;
 
 const Avatar = styled.img`
