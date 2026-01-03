@@ -1,7 +1,7 @@
 import { useState } from "react";
 import styled from "styled-components";
 
-const IMAGES = Array.from({ length: 140 }, (_, i) => `/${i + 1}.jpg`);
+const IMAGES = Array.from({ length: 240 }, (_, i) => `/${i + 1}.jpg`);
 
 interface ButtonProps {
     red?: boolean;
