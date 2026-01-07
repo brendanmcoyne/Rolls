@@ -5,11 +5,11 @@ const HideScrollbar = createGlobalStyle`
         margin: 0;
         padding: 0;
         overflow-y: auto;
-        scrollbar-width: none; /* Firefox */
+        scrollbar-width: none;
     }
 
     ::-webkit-scrollbar {
-        display: none; /* Chrome, Safari */
+        display: none; 
     }
 `;
 

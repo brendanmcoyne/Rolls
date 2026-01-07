@@ -3,6 +3,7 @@ import styled from "styled-components";
 import Rules from "./components/Rules";
 import Scrolling from "./components/Scrolling";
 import Rolls from "./components/Rolls";
+import Claims from "./components/Claims";
 
 type User = { id: number; email: string; name: string; picture?: string | null };
 
@@ -61,6 +62,7 @@ const Avatar = styled.img`
 
 export default function App() {
     const [user, setUser] = useState<User | null | undefined>(undefined);
+    const [view, setView] = useState<"rolls" | "claims">("rolls");
 
     useEffect(() => {
         fetch("http://localhost:3000/api/me", { credentials: "include" })
@@ -95,26 +97,31 @@ export default function App() {
                         <div>{user.name}</div>
                     </UserBox>
 
-                    <Button
-                        onClick={async () => {
-                            await fetch("http://localhost:3000/api/logout", {
-                                method: "POST",
-                                credentials: "include"
-                            });
-                            setUser(null);
-                        }}
-                    >
-                        Sign out
-                    </Button>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                        <Button onClick={() => setView("rolls")}>Roll</Button>
+                        <Button onClick={() => setView("claims")}>Claims</Button>
+                        <Button
+                            onClick={async () => {
+                                await fetch("http://localhost:3000/api/logout", {
+                                    method: "POST",
+                                    credentials: "include"
+                                });
+                                setUser(null);
+                            }}
+                        >
+                            Sign out
+                        </Button>
+                    </div>
                 </TopBar>
 
-                <Rolls
-                    onClaim={(slotIndex, slots) => {
-                        console.log("Claimed slot:", slotIndex, "Slots:", slots);
-                    }}
-                />
-
-                <Rules />
+                {view === "rolls" ? (
+                    <>
+                        <Rolls />
+                        <Rules />
+                    </>
+                ) : (
+                    <Claims />
+                )}
             </Page>
         </>
     );

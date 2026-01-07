@@ -1,76 +1,33 @@
 import { useState } from "react";
 import styled from "styled-components";
 
-const IMAGES = Array.from({ length: 240 }, (_, i) => `/${i + 1}.jpg`);
+type Slot = { id: number; filename: string } | null;
 
-interface ButtonProps {
-    red?: boolean;
-}
-
-interface SlotProps {
-    selected?: boolean;
-}
-
-const SlotBox = styled.div<SlotProps>`
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    max-width: 260px;
-    height: 260px;
-    background-color: #374151;
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    transition: 0.1s;
-    &:hover {
-        transform: scale(1.05);
-    }
-    border: ${p => p.selected ? "3px solid white" : "none"};
-
-`;
-const Button = styled.button<ButtonProps>`
-    padding: 8px 16px;
-    border-radius: 0.75rem;
-    min-width: 120px;
-    font-size: 1.125rem;
-
-    background-color: ${(p) => (p.red ? "#dc2626" : "#2563eb")};
-    &:hover {
-        background-color: ${(p) => (p.red ? "#b91c1c" : "#1d4ed8")};
-        border: 1px solid black;
-    }
-`;
-
-const Page = styled.div`
-    min-height: 100vh;
-    width: 100%;
-    background-color: #111827;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-`;
-
-const Title = styled.h1`
-    font-size: 1.875rem;
-    font-weight: 700;
-    margin-bottom: 24px;
-`;
+const API = "http://localhost:3000";
 
 const Grid = styled.div`
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
-    width: 100%;
-    max-width: 900px;
-
-    justify-items: center;
 `;
 
-const SlotImage = styled.img`
+const SlotBox = styled.div<{ selected?: boolean; disabled?: boolean }>`
     width: 260px;
     height: 260px;
+    background-color: #374151;
+    border-radius: 12px;
+    display: flex;
+    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+    cursor: ${(p) => (p.disabled ? "not-allowed" : "pointer")};
+    border: ${(p) => (p.selected ? "3px solid white" : "none")};
+    opacity: ${(p) => (p.disabled ? 0.5 : 1)};
+`;
+
+const Img = styled.img`
+    width: 100%;
+    height: 100%;
     object-fit: cover;
 `;
 
@@ -80,52 +37,99 @@ const ButtonRow = styled.div`
     margin-top: 20px;
 `;
 
+const Button = styled.button<{ red?: boolean }>`
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 18px;
+    background: ${(p) => (p.red ? "#dc2626" : "#2563eb")};
+    color: white;
+`;
 
 export default function Rolls() {
-    const [slots, setSlots] = useState<(string | null)[]>([null, null, null, null, null, null,]);
-    const [currentSlot, setCurrentSlot] = useState(0);
-    const [claim, setClaim] = useState(null);
+    const [rolled, setRolled] = useState<Slot[]>([]);
+    const [slots, setSlots] = useState<Slot[]>(Array(6).fill(null));
+    const [index, setIndex] = useState(0);
+    const [selected, setSelected] = useState<number | null>(null);
+    const [locked, setLocked] = useState(false);
+    const [msg, setMsg] = useState<string | null>(null);
 
-    const rollImage = () => {
-        if (currentSlot >= 6) return;
+    const startRoll = async () => {
+        setMsg(null);
+        setLocked(false);
+        setSelected(null);
 
-        const availableImages = IMAGES.filter(img => !slots.includes(img));
+        const res = await fetch(`${API}/api/roll?n=6`, {credentials: "include",});
+        const data = await res.json();
 
-        if (availableImages.length === 0) return;
+        const newSlots: Slot[] = Array(6).fill(null);
 
-        const randomIndex = Math.floor(Math.random() * availableImages.length);
-        const newImage = availableImages[randomIndex];
+        if (data.slots.length > 0) {
+            newSlots[0] = data.slots[0];
+        }
 
-        const updatedSlots = [...slots];
-        updatedSlots[currentSlot] = newImage;
-
-        setSlots(updatedSlots);
-        setCurrentSlot(currentSlot + 1);
+        setRolled(data.slots);
+        setSlots(newSlots);
+        setIndex(1);
     };
 
-    const reset = () => {
-        setSlots([null, null, null, null, null, null]);
-        setCurrentSlot(0);
+
+    const revealNext = () => {
+        if (index >= rolled.length) return;
+
+        const copy = [...slots];
+        copy[index] = rolled[index];
+        setSlots(copy);
+        setIndex(index + 1);
+    };
+
+    const claim = async () => {
+        if (locked || selected === null) return;
+        const slot = slots[selected];
+        if (!slot) return;
+
+        const res = await fetch(`${API}/api/claim`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ photoId: slot.id }),
+        });
+
+        if (res.status === 409) {
+            setMsg("Too late — someone else claimed it.");
+            setLocked(true);
+            return;
+        }
+
+        setMsg(`You claimed ${slot.filename}!`);
+        setLocked(true);
     };
 
     return (
         <>
-            <Page>
-                <Title>Pasta Rolls</Title>
+            <Grid>
+                {slots.map((slot, i) => (
+                    <SlotBox
+                        key={i}
+                        selected={selected === i}
+                        disabled={!slot || locked}
+                        onClick={() => slot && !locked && setSelected(i)}
+                    >
+                        {slot ? <Img src={`/${slot.filename}`} /> : "Empty"}
+                    </SlotBox>
+                ))}
+            </Grid>
 
-                <Grid>
-                    {slots.map((img, i) => (
-                        <SlotBox key={i} onClick={() => setClaim(i)} selected={claim === i}>
-                            {img ? (<SlotImage src={img} alt="slot" />) : (<span style={{ opacity: 0.4 }}>Empty</span>)}
-                        </SlotBox>
-                    ))}
-                </Grid>
+            <ButtonRow>
+                {rolled.length === 0 ? (
+                    <Button onClick={startRoll}>Roll</Button>
+                ) : index < rolled.length ? (
+                    <Button onClick={revealNext}>Roll</Button>
+                ) : (
+                    <Button red onClick={claim}>Claim</Button>
+                )}
+            </ButtonRow>
 
-                <ButtonRow>
-                    <Button onClick={rollImage}>Roll</Button>
-                    <Button red onClick={reset}>Claim</Button>
-                </ButtonRow>
-            </Page>
+            {msg && <p>{msg}</p>}
         </>
     );
 }

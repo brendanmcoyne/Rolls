@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS photos (
                                       id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                      filename TEXT NOT NULL,
+                                      filename TEXT NOT NULL UNIQUE,
                                       uploaded_by INTEGER NOT NULL,
                                       uploaded_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE CASCADE
@@ -24,3 +24,5 @@ CREATE TABLE IF NOT EXISTS claims (
     FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE,
     FOREIGN KEY (claimed_by) REFERENCES users(id) ON DELETE CASCADE
     );
+
+CREATE INDEX IF NOT EXISTS idx_claims_claimed_by ON claims(claimed_by);
