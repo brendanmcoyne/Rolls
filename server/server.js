@@ -11,6 +11,20 @@ initDb();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
+function getClaimWindowUTC(date = new Date()) {
+    const start = new Date(date);
+    start.setUTCMinutes(0, 0, 0);
+
+    const hour = start.getUTCHours();
+    const windowStartHour = Math.floor(hour / 3) * 3;
+    start.setUTCHours(windowStartHour);
+
+    const end = new Date(start);
+    end.setUTCHours(start.getUTCHours() + 3);
+
+    return { start, end };
+}
+
 app.set("trust proxy", 1);
 
 app.use(
@@ -84,7 +98,6 @@ app.post("/api/photos/seed", (req, res) => {
     res.json({ ok: true, seeded: count });
 });
 
-// Roll up to 6 UNCLAIMED photos
 app.get("/api/roll", (req, res) => {
     const n = Math.min(Number(req.query.n || 6), 6);
 
@@ -107,27 +120,26 @@ app.post("/api/claim", (req, res) => {
         return res.status(400).json({ error: "photoId required" });
     }
 
-    const COOLDOWN_MS = 3 * 60 * 60 * 1000;
+    const { start, end } = getClaimWindowUTC();
 
-    const lastClaim = db.prepare(`
-        SELECT claimed_at
+    const alreadyClaimed = db.prepare(`
+        SELECT 1
         FROM claims
         WHERE claimed_by = ?
-        ORDER BY claimed_at DESC
-        LIMIT 1
-    `).get(req.user.id);
+          AND claimed_at >= datetime(?)
+          AND claimed_at < datetime(?)
+            LIMIT 1
+    `).get(
+        req.user.id,
+        start.toISOString(),
+        end.toISOString()
+    );
 
-    if (lastClaim) {
-        const last = new Date(lastClaim.claimed_at).getTime();
-        const now = Date.now();
-        const remaining = COOLDOWN_MS - (now - last);
-
-        if (remaining > 0) {
-            return res.status(429).json({
-                error: "Cooldown active",
-                retryInMs: remaining
-            });
-        }
+    if (alreadyClaimed) {
+        return res.status(429).json({
+            error: "Already claimed this window",
+            retryAt: end.toISOString()
+        });
     }
 
     try {
@@ -140,9 +152,13 @@ app.post("/api/claim", (req, res) => {
             SELECT id, filename FROM photos WHERE id = ?
         `).get(photoId);
 
-        res.json({ ok: true, claimed: photo });
+        res.json({
+            ok: true,
+            claimed: photo,
+            nextResetAt: end.toISOString()
+        });
     } catch {
-        res.status(409).json({ ok: false, error: "Already claimed" });
+        res.status(409).json({ error: "Photo already claimed" });
     }
 });
 

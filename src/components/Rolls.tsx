@@ -39,11 +39,11 @@ const ButtonRow = styled.div`
     margin-top: 20px;
 `;
 
-const Button = styled.button<{ red?: boolean }>`
+const Button = styled.button<{ $red?: boolean }>`
     padding: 10px 16px;
     border-radius: 12px;
     font-size: 18px;
-    background: ${(p) => (p.red ? "#dc2626" : "#2563eb")};
+    background: ${(p) => (p.$red ? "#dc2626" : "#2563eb")};
     color: white;
 `;
 
@@ -99,8 +99,8 @@ export default function Rolls() {
 
         if (res.status === 429) {
             const data = await res.json();
-            const mins = Math.ceil(data.retryInMs / 60000);
-            setMsg(`You can claim again in ${mins} minutes`);
+            const reset = new Date(data.retryAt);
+            setMsg(`You can claim again at ${reset.toLocaleTimeString()}`);
             setLocked(true);
             return;
         }
@@ -139,7 +139,7 @@ export default function Rolls() {
                 ) : index < rolled.length ? (
                     <Button onClick={revealNext}>Roll</Button>
                 ) : (
-                    <Button red onClick={claim}>Claim</Button>
+                    <Button $red onClick={claim}>Claim</Button>
                 )}
             </ButtonRow>
 

@@ -90,7 +90,7 @@ export default function App() {
                 <h1>Pasta Rolls</h1>
                 <p>You must sign in to use the site.</p>
                 <a href="http://localhost:3000/api/auth/google">
-                    <Button>Sign in</Button>
+                    <Button style={{backgroundColor: "white", color: "black"}}>Sign in</Button>
                 </a>
             </LoginPage>
         );
