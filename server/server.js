@@ -44,8 +44,8 @@ app.use(
         saveUninitialized: false,
         cookie: {
             httpOnly: true,
-            sameSite: "lax",
-            secure: false
+            sameSite: "none",
+            secure: true
         }
     })
 );
@@ -205,7 +205,4 @@ app.post("/api/unclaim", (req, res) => {
     res.json({ ok: true });
 });
 
-
-app.listen(3000, () => {
-    console.log("Backend running on http://localhost:3000");
-});
+export default app;
