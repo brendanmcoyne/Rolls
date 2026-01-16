@@ -39,10 +39,6 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// =====================
-// PUBLIC ROUTES
-// =====================
-
 app.get("/", (req, res) => {
     res.send("Server running ✅");
 });
@@ -69,17 +65,10 @@ app.get("/api/me", (req, res) => {
     res.json(req.user);
 });
 
-// =====================
-// AUTH WALL
-// =====================
 app.use("/api", requireAuth);
 
-// =====================
-// PROTECTED ROUTES
-// =====================
-
 app.post("/api/photos/seed", (req, res) => {
-    const count = Number(req.body?.count || 300);
+    const count = Number(req.body?.count || 400);
 
     const insert = db.prepare(
         "INSERT OR IGNORE INTO photos (filename, uploaded_by) VALUES (?, ?)"
@@ -111,19 +100,45 @@ app.get("/api/roll", (req, res) => {
     res.json({ slots: rows });
 });
 
-// Claim a photo (GLOBAL, ATOMIC)
+
 app.post("/api/claim", (req, res) => {
     const photoId = Number(req.body?.photoId);
-    if (!photoId) return res.status(400).json({ error: "photoId required" });
+    if (!photoId) {
+        return res.status(400).json({ error: "photoId required" });
+    }
+
+    const COOLDOWN_MS = 3 * 60 * 60 * 1000;
+
+    const lastClaim = db.prepare(`
+        SELECT claimed_at
+        FROM claims
+        WHERE claimed_by = ?
+        ORDER BY claimed_at DESC
+        LIMIT 1
+    `).get(req.user.id);
+
+    if (lastClaim) {
+        const last = new Date(lastClaim.claimed_at).getTime();
+        const now = Date.now();
+        const remaining = COOLDOWN_MS - (now - last);
+
+        if (remaining > 0) {
+            return res.status(429).json({
+                error: "Cooldown active",
+                retryInMs: remaining
+            });
+        }
+    }
 
     try {
-        db.prepare(
-            "INSERT INTO claims (photo_id, claimed_by) VALUES (?, ?)"
-        ).run(photoId, req.user.id);
+        db.prepare(`
+            INSERT INTO claims (photo_id, claimed_by)
+            VALUES (?, ?)
+        `).run(photoId, req.user.id);
 
-        const photo = db
-            .prepare("SELECT id, filename FROM photos WHERE id = ?")
-            .get(photoId);
+        const photo = db.prepare(`
+            SELECT id, filename FROM photos WHERE id = ?
+        `).get(photoId);
 
         res.json({ ok: true, claimed: photo });
     } catch {
@@ -131,7 +146,16 @@ app.post("/api/claim", (req, res) => {
     }
 });
 
-// View my claimed photos
+app.get("/api/claims", (req, res) => {
+    const rows = db.prepare(`
+    SELECT p.id, p.filename, c.claimed_by
+    FROM claims c
+    JOIN photos p ON p.id = c.photo_id
+  `).all();
+
+    res.json({ claims: rows });
+});
+
 app.get("/api/my-claims", (req, res) => {
     const rows = db.prepare(`
     SELECT p.id, p.filename, c.claimed_at

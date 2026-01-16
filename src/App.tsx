@@ -4,6 +4,7 @@ import Rules from "./components/Rules";
 import Scrolling from "./components/Scrolling";
 import Rolls from "./components/Rolls";
 import Claims from "./components/Claims";
+import Gallery from "./components/Gallery";
 
 type User = { id: number; email: string; name: string; picture?: string | null };
 
@@ -37,6 +38,14 @@ const Button = styled.button`
     border: none;
     cursor: pointer;
     font-weight: 600;
+    background-color: #111827;
+    color: #dddddd;
+    &:hover {
+        text-decoration: underline;
+    }
+    &:focus {
+        outline: none;
+    }
 `;
 
 const TopBar = styled.div`
@@ -62,7 +71,7 @@ const Avatar = styled.img`
 
 export default function App() {
     const [user, setUser] = useState<User | null | undefined>(undefined);
-    const [view, setView] = useState<"rolls" | "claims">("rolls");
+    const [view, setView] = useState<"rolls" | "claims" | "gallery">("rolls");
 
     useEffect(() => {
         fetch("http://localhost:3000/api/me", { credentials: "include" })
@@ -100,6 +109,7 @@ export default function App() {
                     <div style={{ display: "flex", gap: "12px" }}>
                         <Button onClick={() => setView("rolls")}>Roll</Button>
                         <Button onClick={() => setView("claims")}>Claims</Button>
+                        <Button onClick={() => setView("gallery")}>Gallery</Button>
                         <Button
                             onClick={async () => {
                                 await fetch("http://localhost:3000/api/logout", {
@@ -108,8 +118,8 @@ export default function App() {
                                 });
                                 setUser(null);
                             }}
-                        >
-                            Sign out
+                        style={{backgroundColor: "white", color: "black"}}>
+                            Sign Out
                         </Button>
                     </div>
                 </TopBar>
@@ -119,8 +129,10 @@ export default function App() {
                         <Rolls />
                         <Rules />
                     </>
-                ) : (
+                ) : view === "claims" ? (
                     <Claims />
+                ) : (
+                    <Gallery />
                 )}
             </Page>
         </>

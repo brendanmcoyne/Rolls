@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styled from "styled-components";
+import { NAMES } from "../data/photoNames.ts";
 
 type Slot = { id: number; filename: string } | null;
 
@@ -9,6 +10,7 @@ const Grid = styled.div`
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
+    margin-top: 25px;
 `;
 
 const SlotBox = styled.div<{ selected?: boolean; disabled?: boolean }>`
@@ -84,6 +86,7 @@ export default function Rolls() {
 
     const claim = async () => {
         if (locked || selected === null) return;
+
         const slot = slots[selected];
         if (!slot) return;
 
@@ -94,13 +97,24 @@ export default function Rolls() {
             body: JSON.stringify({ photoId: slot.id }),
         });
 
-        if (res.status === 409) {
-            setMsg("Too late — someone else claimed it.");
+        if (res.status === 429) {
+            const data = await res.json();
+            const mins = Math.ceil(data.retryInMs / 60000);
+            setMsg(`You can claim again in ${mins} minutes`);
             setLocked(true);
             return;
         }
 
-        setMsg(`You claimed ${slot.filename}!`);
+        const getClaimMessage = (filename: string) => {
+            const name = NAMES[filename] ?? filename;
+
+            if (name === "Bros") return "You claimed the Bros!";
+            if (name === "Party") return "You claimed a Party!";
+
+            return `You claimed ${name}!`;
+        };
+
+        setMsg(getClaimMessage(slot.filename));
         setLocked(true);
     };
 

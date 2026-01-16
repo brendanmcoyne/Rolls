@@ -26,3 +26,6 @@ CREATE TABLE IF NOT EXISTS claims (
     );
 
 CREATE INDEX IF NOT EXISTS idx_claims_claimed_by ON claims(claimed_by);
+
+CREATE INDEX IF NOT EXISTS idx_claims_user_time
+    ON claims (claimed_by, claimed_at DESC);

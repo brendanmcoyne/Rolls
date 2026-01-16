@@ -34,6 +34,13 @@ const CardBox = styled.div`
     border-radius: 12px;
     overflow: hidden;
     position: relative;
+    transition: 0.3s;
+    &:hover {
+        transform: scale(1.05);
+        @media screen and (max-width: 750px) {
+            transform: none;
+        }
+    }
 `;
 
 const Img = styled.img`
