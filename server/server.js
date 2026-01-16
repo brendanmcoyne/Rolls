@@ -39,9 +39,10 @@ app.use(express.json());
 app.use(
     session({
         name: "sid",
-        secret: process.env.SESSION_SECRET || "dev-secret-change-me",
+        secret: process.env.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
+        proxy: true,
         cookie: {
             httpOnly: true,
             sameSite: "none",
