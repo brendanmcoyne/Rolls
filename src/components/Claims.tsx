@@ -7,7 +7,7 @@ type Card = {
     claimed_at: string;
 };
 
-const API = "http://localhost:3000";
+const API = import.meta.env.VITE_API_URL;
 
 const Page = styled.div`
     width: 100%;

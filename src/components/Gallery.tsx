@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { NAMES } from "../data/photoNames";
 
+const API = import.meta.env.VITE_API_URL as string;
+
 type Claim = {
     id: number;
     filename: string;
@@ -125,7 +127,7 @@ export default function Gallery() {
     const [claims, setClaims] = useState<Claim[]>([]);
 
     useEffect(() => {
-        fetch("http://localhost:3000/api/claims", {
+        fetch(`${API}/api/claims`, {
             credentials: "include",
         })
             .then((res) => res.json())

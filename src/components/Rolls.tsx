@@ -4,7 +4,7 @@ import { NAMES } from "../data/photoNames.ts";
 
 type Slot = { id: number; filename: string } | null;
 
-const API = "http://localhost:3000";
+const API = import.meta.env.VITE_API_URL;
 
 const Grid = styled.div`
     display: grid;

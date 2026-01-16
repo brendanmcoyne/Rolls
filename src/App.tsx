@@ -6,6 +6,7 @@ import Rolls from "./components/Rolls";
 import Claims from "./components/Claims";
 import Gallery from "./components/Gallery";
 
+const API = import.meta.env.VITE_API_URL as string;
 type User = { id: number; email: string; name: string; picture?: string | null };
 
 const Page = styled.div`
@@ -74,7 +75,7 @@ export default function App() {
     const [view, setView] = useState<"rolls" | "claims" | "gallery">("rolls");
 
     useEffect(() => {
-        fetch("http://localhost:3000/api/me", { credentials: "include" })
+        fetch(`${API}/api/me`, { credentials: "include" })
             .then((res) => (res.status === 401 ? null : res.json()))
             .then(setUser)
             .catch(() => setUser(null));
@@ -89,8 +90,10 @@ export default function App() {
             <LoginPage>
                 <h1>Pasta Rolls</h1>
                 <p>You must sign in to use the site.</p>
-                <a href="http://localhost:3000/api/auth/google">
-                    <Button style={{backgroundColor: "white", color: "black"}}>Sign in</Button>
+                <a href={`${API}/api/auth/google`}>
+                    <Button style={{ backgroundColor: "white", color: "black" }}>
+                        Sign in
+                    </Button>
                 </a>
             </LoginPage>
         );
@@ -112,7 +115,7 @@ export default function App() {
                         <Button onClick={() => setView("gallery")}>Gallery</Button>
                         <Button
                             onClick={async () => {
-                                await fetch("http://localhost:3000/api/logout", {
+                                await fetch(`${API}/api/logout`, {
                                     method: "POST",
                                     credentials: "include"
                                 });
