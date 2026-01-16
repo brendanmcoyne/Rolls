@@ -66,7 +66,9 @@ app.get(
     "/api/auth/google/callback",
     passport.authenticate("google", { failureRedirect: FRONTEND_URL }),
     (req, res) => {
-        res.redirect(FRONTEND_URL);
+        req.session.save(() => {
+            res.redirect(FRONTEND_URL);
+        });
     }
 );
 
