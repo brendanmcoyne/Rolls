@@ -110,7 +110,7 @@ export default function App() {
                     </UserBox>
 
                     <div style={{ display: "flex", gap: "12px" }}>
-                        <Button onClick={() => setView("rolls")}>Rolls</Button>
+                        <Button onClick={() => setView("rolls")}>Roll</Button>
                         <Button onClick={() => setView("claims")}>Claims</Button>
                         <Button onClick={() => setView("gallery")}>Gallery</Button>
                         <Button
