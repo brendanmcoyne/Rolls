@@ -9,7 +9,7 @@ import { requireAuth } from "./authMiddleware.js";
 const app = express();
 initDb();
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
 function getClaimWindowUTC(date = new Date()) {
     const start = new Date(date);
@@ -29,21 +29,23 @@ app.set("trust proxy", 1);
 
 app.use(
     cors({
-        origin: (origin, cb) => {
-            if (!origin) return cb(null, true);
+        origin: (origin, callback) => {
+            if (!origin) return callback(null, true);
 
-            const allowed = process.env.FRONTEND_URL.replace(/\/$/, "");
-            const incoming = origin.replace(/\/$/, "");
+            const normalizedOrigin = origin.replace(/\/$/, "");
+            const allowedOrigin = process.env.FRONTEND_URL.replace(/\/$/, "");
 
-            if (incoming === allowed) {
-                cb(null, true);
-            } else {
-                cb(new Error("CORS blocked"));
+            if (normalizedOrigin === allowedOrigin) {
+                return callback(null, true);
             }
+
+            console.error("CORS blocked:", origin);
+            return callback(new Error("Not allowed by CORS"));
         },
-        credentials: true
+        credentials: true,
     })
 );
+
 
 app.use(express.json());
 
