@@ -26,6 +26,9 @@ const Grid = styled.div`
     display: grid;
     grid-template-columns: repeat(3, minmax(180px, 1fr));
     gap: 16px;
+    @media screen and (max-width: 750px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
 `;
 
 const CardBox = styled.div`

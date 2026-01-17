@@ -11,6 +11,9 @@ const Grid = styled.div`
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     margin-top: 25px;
+    @media screen and (max-width: 750px) {
+        grid-template-columns: repeat(1, 1fr);
+    }
 `;
 
 const SlotBox = styled.div<{ selected?: boolean; disabled?: boolean }>`
