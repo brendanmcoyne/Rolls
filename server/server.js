@@ -29,7 +29,18 @@ app.set("trust proxy", 1);
 
 app.use(
     cors({
-        origin: FRONTEND_URL,
+        origin: (origin, cb) => {
+            if (!origin) return cb(null, true);
+
+            const allowed = process.env.FRONTEND_URL.replace(/\/$/, "");
+            const incoming = origin.replace(/\/$/, "");
+
+            if (incoming === allowed) {
+                cb(null, true);
+            } else {
+                cb(new Error("CORS blocked"));
+            }
+        },
         credentials: true
     })
 );
