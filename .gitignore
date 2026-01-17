@@ -29,5 +29,3 @@ dist-ssr
 server/.env
 .env
 
-/public/
-
