@@ -13,6 +13,7 @@ type Claim = {
 const Wrapper = styled.div`
     max-width: 1200px;
     margin: 0 auto;
+    padding: 16px;
 `;
 
 const SearchRow = styled.div`
@@ -22,14 +23,15 @@ const SearchRow = styled.div`
 `;
 
 const Search = styled.input`
-    width: 300px;
-    padding: 8px 12px;
-    font-size: 16px;
+    width: 100%;
+    max-width: 320px;
+    padding: 10px 14px;
+    font-size: 16px; 
 `;
 
 const GroupGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(3, 260px);
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 16px;
     justify-content: center;
 `;

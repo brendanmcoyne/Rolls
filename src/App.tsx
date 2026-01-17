@@ -62,6 +62,9 @@ const UserBox = styled.div`
     display: flex;
     align-items: center;
     gap: 10px;
+    @media screen and (max-width: 750px) {
+        display: none;
+    }
 `;
 
 const Avatar = styled.img`
