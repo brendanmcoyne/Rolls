@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { NAMES } from "../data/photoNames";
 
-const API = import.meta.env.VITE_API_URL as string;
+const API = "";
 
 type Claim = {
     id: number;

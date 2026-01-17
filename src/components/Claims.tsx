@@ -7,7 +7,7 @@ type Card = {
     claimed_at: string;
 };
 
-const API = import.meta.env.VITE_API_URL;
+const API = "";
 
 const Page = styled.div`
     width: 100%;

@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://pasta-rolls-backend.onrender.com/api/$1"
+    }
+  ]
+}

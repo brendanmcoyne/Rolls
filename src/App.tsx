@@ -6,7 +6,7 @@ import Rolls from "./components/Rolls";
 import Claims from "./components/Claims";
 import Gallery from "./components/Gallery";
 
-const API = import.meta.env.VITE_API_URL as string;
+const API = "";
 type User = { id: number; email: string; name: string; picture?: string | null };
 
 const Page = styled.div`
