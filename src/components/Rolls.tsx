@@ -125,7 +125,6 @@ export default function Rolls() {
         };
 
         setMsg(getClaimMessage(slot.filename));
-        setLocked(true);
     };
 
     return (
