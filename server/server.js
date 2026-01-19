@@ -7,7 +7,18 @@ import { initDb, db } from "./db.js";
 import { requireAuth } from "./authMiddleware.js";
 
 const app = express();
-initDb();
+
+const PORT = process.env.PORT || 3000;
+
+async function start() {
+    await initDb();
+
+    app.listen(PORT, () => {
+        console.log(`Backend running on port ${PORT}`);
+    });
+}
+
+start();
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -104,74 +115,85 @@ app.post("/api/photos/seed", (req, res) => {
     res.json({ ok: true, seeded: count });
 });
 
-app.get("/api/roll", (req, res) => {
+app.get("/api/roll", async (req, res) => {
     const n = Math.min(Number(req.query.n || 6), 6);
 
-    const rows = db.prepare(`
+    const { rows } = await db.query(
+        `
         SELECT p.id, p.filename
         FROM photos p
-                 LEFT JOIN claims c ON c.photo_id = p.id
+        LEFT JOIN claims c ON c.photo_id = p.id
         WHERE c.photo_id IS NULL
         ORDER BY RANDOM()
-            LIMIT ?
-    `).all(n);
+        LIMIT $1
+        `,
+        [n]
+    );
 
     res.json({ slots: rows });
 });
 
-/* -------------------- CLAIM (FIXED 3-HOUR WINDOWS) -------------------- */
-
-app.post("/api/claim", (req, res) => {
+app.post("/api/claim", async (req, res) => {
     const photoId = Number(req.body?.photoId);
     if (!photoId) {
         return res.status(400).json({ error: "photoId required" });
     }
 
-    const alreadyClaimed = db.prepare(`
+    // Check if user already claimed in current 3-hour window (ET)
+    const { rows: already } = await db.query(
+        `
         SELECT 1
         FROM claims
-        WHERE claimed_by = ?
-          AND claimed_at >= datetime(
-                strftime('%Y-%m-%d %H:00:00', 'now', 'localtime'),
-                '-' || (strftime('%H','now','localtime') % 3) || ' hours'
-                            )
-            LIMIT 1
-    `).get(req.user.id);
+        WHERE claimed_by = $1
+          AND claimed_at >= date_trunc('hour', now())
+            - (extract(hour from now())::int % 3) * interval '1 hour'
+        LIMIT 1
+        `,
+        [req.user.id]
+    );
 
-    if (alreadyClaimed) {
-        const nextReset = db.prepare(`
-        SELECT datetime(
-            strftime('%Y-%m-%d %H:00:00', 'now', 'localtime'),
-            '+' || (3 - (strftime('%H','now','localtime') % 3)) || ' hours'
-        ) AS reset
-    `).get();
+    if (already.length > 0) {
+        const { rows } = await db.query(
+            `
+            SELECT
+                date_trunc('hour', now())
+                + (3 - (extract(hour from now())::int % 3)) * interval '1 hour'
+                AS reset
+            `
+        );
 
         return res.status(429).json({
             error: "Already claimed this window",
-            retryAt: Date.parse(nextReset.reset)
+            retryAt: rows[0].reset.getTime(),
         });
     }
 
     try {
-        db.prepare(`
+        await db.query(
+            `
             INSERT INTO claims (photo_id, claimed_by)
-            VALUES (?, ?)
-        `).run(photoId, req.user.id);
+            VALUES ($1, $2)
+            `,
+            [photoId, req.user.id]
+        );
 
-        const photo = db.prepare(`
-            SELECT id, filename FROM photos WHERE id = ?
-        `).get(photoId);
+        const { rows } = await db.query(
+            `
+            SELECT id, filename
+            FROM photos
+            WHERE id = $1
+            `,
+            [photoId]
+        );
 
         res.json({
             ok: true,
-            claimed: photo,
+            claimed: rows[0],
         });
-    } catch {
+    } catch (err) {
         res.status(409).json({ error: "Photo already claimed" });
     }
 });
-
-/* -------------------- CLAIM VIEWS -------------------- */
 
 app.get("/api/claims", (_, res) => {
     const rows = db.prepare(`
@@ -214,14 +236,6 @@ app.post("/api/unclaim", (req, res) => {
     }
 
     res.json({ ok: true });
-});
-
-/* -------------------- START SERVER -------------------- */
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Backend running on port ${PORT}`);
 });
 
 export default app;

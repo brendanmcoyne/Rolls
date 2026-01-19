@@ -1,10 +1,18 @@
-import Database from "better-sqlite3";
+import pg from "pg";
 import fs from "node:fs";
 import path from "node:path";
 
-export const db = new Database(path.join(process.cwd(), "app.db"));
+const { Pool } = pg;
 
-export function initDb() {
-    const schema = fs.readFileSync(path.join(process.cwd(), "schema.sql"), "utf8");
-    db.exec(schema);
+export const db = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+});
+
+export async function initDb() {
+    const schema = fs.readFileSync(
+        path.join(process.cwd(), "schema.sql"),
+        "utf8"
+    );
+    await db.query(schema);
 }
