@@ -31,9 +31,12 @@ const Search = styled.input`
 
 const GroupGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(3, 260px);
     gap: 16px;
     justify-content: center;
+    @media screen and (max-width: 750px) {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
 `;
 
 const GroupCard = styled.div`
