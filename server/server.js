@@ -142,8 +142,8 @@ app.post("/api/claim", (req, res) => {
         SELECT 1
         FROM claims
         WHERE claimed_by = ?
-          AND claimed_at >= datetime(?)
-          AND claimed_at < datetime(?)
+          AND claimed_at >= ?
+          AND claimed_at < ?
             LIMIT 1
     `).get(
         req.user.id,
