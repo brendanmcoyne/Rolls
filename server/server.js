@@ -127,36 +127,28 @@ app.post("/api/claim", (req, res) => {
         return res.status(400).json({ error: "photoId required" });
     }
 
-    /**
-     * Window start:
-     * Floors current hour to nearest multiple of 3
-     * Examples:
-     * 01:xx → 01:00
-     * 03:xx → 01:00
-     * 04:xx → 04:00
-     */
     const alreadyClaimed = db.prepare(`
         SELECT 1
         FROM claims
         WHERE claimed_by = ?
           AND claimed_at >= datetime(
-                strftime('%Y-%m-%d %H:00:00', 'now'),
-                '-' || (strftime('%H','now') % 3) || ' hours'
-          )
-        LIMIT 1
+                strftime('%Y-%m-%d %H:00:00', 'now', 'localtime'),
+                '-' || (strftime('%H','now','localtime') % 3) || ' hours'
+                            )
+            LIMIT 1
     `).get(req.user.id);
 
     if (alreadyClaimed) {
         const nextReset = db.prepare(`
-            SELECT datetime(
-                strftime('%Y-%m-%d %H:00:00', 'now'),
-                '+' || (3 - (strftime('%H','now') % 3)) || ' hours'
-            ) AS reset
-        `).get();
+        SELECT datetime(
+            strftime('%Y-%m-%d %H:00:00', 'now', 'localtime'),
+            '+' || (3 - (strftime('%H','now','localtime') % 3)) || ' hours'
+        ) AS reset
+    `).get();
 
         return res.status(429).json({
             error: "Already claimed this window",
-            retryAt: nextReset.reset,
+            retryAt: nextReset.reset
         });
     }
 
