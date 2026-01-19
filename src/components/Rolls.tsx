@@ -13,10 +13,11 @@ const Grid = styled.div`
     margin-top: 25px;
 
     @media screen and (max-width: 750px) {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
     }
 `;
+
 
 const SlotBox = styled.div<{ selected?: boolean; disabled?: boolean }>`
     width: 260px;
@@ -30,12 +31,6 @@ const SlotBox = styled.div<{ selected?: boolean; disabled?: boolean }>`
     cursor: ${(p) => (p.disabled ? "not-allowed" : "pointer")};
     border: ${(p) => (p.selected ? "3px solid white" : "none")};
     opacity: ${(p) => (p.disabled ? 0.5 : 1)};
-
-    @media screen and (max-width: 750px) {
-        width: 100%;
-        aspect-ratio: 1 / 1;
-        height: auto;
-    }
 `;
 
 const Img = styled.img`
