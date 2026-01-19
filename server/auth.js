@@ -2,48 +2,83 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { db } from "./db.js";
 
-passport.serializeUser((user, done) => done(null, user.id));
+/* -------------------- SESSION -------------------- */
 
-passport.deserializeUser((id, done) => {
-    const user = db
-        .prepare("SELECT id, email, name, picture FROM users WHERE id = ?")
-        .get(id);
-    done(null, user || null);
+passport.serializeUser((user, done) => {
+    done(null, user.id);
 });
+
+passport.deserializeUser(async (id, done) => {
+    try {
+        const { rows } = await db.query(
+            "SELECT id, email, name, picture FROM users WHERE id = $1",
+            [id]
+        );
+
+        done(null, rows[0] || null);
+    } catch (err) {
+        done(err);
+    }
+});
+
+/* -------------------- GOOGLE STRATEGY -------------------- */
 
 passport.use(
     new GoogleStrategy(
         {
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: "/api/auth/google/callback"
+            callbackURL: "/api/auth/google/callback",
         },
-        (accessToken, refreshToken, profile, done) => {
+        async (accessToken, refreshToken, profile, done) => {
             try {
-                const sub = profile.id;
+                const googleSub = profile.id;
                 const email = profile.emails?.[0]?.value || "";
                 const name = profile.displayName || "";
                 const picture = profile.photos?.[0]?.value || null;
 
-                let user = db
-                    .prepare("SELECT id, email, name, picture FROM users WHERE google_sub = ?")
-                    .get(sub);
+                // Find existing user
+                const { rows } = await db.query(
+                    `
+                    SELECT id, email, name, picture
+                    FROM users
+                    WHERE google_sub = $1
+                    `,
+                    [googleSub]
+                );
+
+                let user = rows[0];
 
                 if (!user) {
-                    const result = db
-                        .prepare("INSERT INTO users (google_sub, email, name, picture) VALUES (?, ?, ?, ?)")
-                        .run(sub, email, name, picture);
+                    // Create new user
+                    const insert = await db.query(
+                        `
+                        INSERT INTO users (google_sub, email, name, picture)
+                        VALUES ($1, $2, $3, $4)
+                        RETURNING id, email, name, picture
+                        `,
+                        [googleSub, email, name, picture]
+                    );
 
-                    user = { id: result.lastInsertRowid, email, name, picture };
+                    user = insert.rows[0];
                 } else {
-                    db.prepare("UPDATE users SET email=?, name=?, picture=? WHERE google_sub=?")
-                        .run(email, name, picture, sub);
-                    user = { ...user, email, name, picture };
+                    // Update existing user info
+                    const update = await db.query(
+                        `
+                        UPDATE users
+                        SET email = $1, name = $2, picture = $3
+                        WHERE google_sub = $4
+                        RETURNING id, email, name, picture
+                        `,
+                        [email, name, picture, googleSub]
+                    );
+
+                    user = update.rows[0];
                 }
 
                 done(null, user);
-            } catch (e) {
-                done(e);
+            } catch (err) {
+                done(err);
             }
         }
     )
