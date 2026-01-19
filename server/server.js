@@ -148,7 +148,7 @@ app.post("/api/claim", (req, res) => {
 
         return res.status(429).json({
             error: "Already claimed this window",
-            retryAt: nextReset.reset
+            retryAt: Date.parse(nextReset.reset)
         });
     }
 
