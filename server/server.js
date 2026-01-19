@@ -142,14 +142,9 @@ app.post("/api/claim", (req, res) => {
         SELECT 1
         FROM claims
         WHERE claimed_by = ?
-          AND claimed_at >= ?
-          AND claimed_at < ?
+          AND claimed_at >= datetime('now', '-3 hours')
             LIMIT 1
-    `).get(
-        req.user.id,
-        start.toISOString(),
-        end.toISOString()
-    );
+    `).get(req.user.id);
 
     if (alreadyClaimed) {
         return res.status(429).json({
