@@ -31,6 +31,10 @@ const SlotBox = styled.div<{ selected?: boolean; disabled?: boolean }>`
     cursor: ${(p) => (p.disabled ? "not-allowed" : "pointer")};
     border: ${(p) => (p.selected ? "3px solid white" : "none")};
     opacity: ${(p) => (p.disabled ? 0.5 : 1)};
+    @media screen and (max-width: 750px) {
+        width: 150px;
+        height: 150px;
+    }
 `;
 
 const Img = styled.img`
