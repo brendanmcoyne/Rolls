@@ -75,12 +75,18 @@ const BackButton = styled.button`
     color: white;
     font-size: 16px;
     cursor: pointer;
+    @media screen and (max-width: 750px) {
+        justify-content: center;
+    }
 `;
 
 const Grid = styled.div`
     display: grid;
     grid-template-columns: repeat(3, 350px);
     gap: 16px;
+    @media screen and (max-width: 750px) {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
 `;
 
 const SlotBox = styled.div`
