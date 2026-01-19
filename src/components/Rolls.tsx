@@ -12,7 +12,7 @@ const Grid = styled.div`
     gap: 16px;
     margin-top: 25px;
     @media screen and (max-width: 750px) {
-        grid-template-columns: repeat(2, minmax(160px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
     }
 `;
 
