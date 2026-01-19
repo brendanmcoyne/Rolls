@@ -11,20 +11,6 @@ initDb();
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
-function getClaimWindowUTC(date = new Date()) {
-    const start = new Date(date);
-    start.setUTCMinutes(0, 0, 0);
-
-    const hour = start.getUTCHours();
-    const windowStartHour = Math.floor(hour / 3) * 3;
-    start.setUTCHours(windowStartHour);
-
-    const end = new Date(start);
-    end.setUTCHours(start.getUTCHours() + 3);
-
-    return { start, end };
-}
-
 app.set("trust proxy", 1);
 
 app.use(
@@ -33,19 +19,17 @@ app.use(
             if (!origin) return callback(null, true);
 
             const normalizedOrigin = origin.replace(/\/$/, "");
-            const allowedOrigin = process.env.FRONTEND_URL.replace(/\/$/, "");
+            const allowedOrigin = FRONTEND_URL.replace(/\/$/, "");
 
             if (normalizedOrigin === allowedOrigin) {
                 return callback(null, true);
             }
 
-            console.error("CORS blocked:", origin);
             return callback(new Error("Not allowed by CORS"));
         },
         credentials: true,
     })
 );
-
 
 app.use(express.json());
 
@@ -59,15 +43,17 @@ app.use(
         cookie: {
             httpOnly: true,
             sameSite: "none",
-            secure: "auto"
-        }
+            secure: "auto",
+        },
     })
 );
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.get("/", (req, res) => {
+/* -------------------- BASIC ROUTES -------------------- */
+
+app.get("/", (_, res) => {
     res.send("Server running ✅");
 });
 
@@ -95,7 +81,11 @@ app.get("/api/me", (req, res) => {
     res.json(req.user);
 });
 
+/* -------------------- AUTH GUARD -------------------- */
+
 app.use("/api", requireAuth);
+
+/* -------------------- PHOTOS -------------------- */
 
 app.post("/api/photos/seed", (req, res) => {
     const count = Number(req.body?.count || 400);
@@ -118,17 +108,18 @@ app.get("/api/roll", (req, res) => {
     const n = Math.min(Number(req.query.n || 6), 6);
 
     const rows = db.prepare(`
-    SELECT p.id, p.filename
-    FROM photos p
-    LEFT JOIN claims c ON c.photo_id = p.id
-    WHERE c.photo_id IS NULL
-    ORDER BY RANDOM()
-    LIMIT ?
-  `).all(n);
+        SELECT p.id, p.filename
+        FROM photos p
+                 LEFT JOIN claims c ON c.photo_id = p.id
+        WHERE c.photo_id IS NULL
+        ORDER BY RANDOM()
+            LIMIT ?
+    `).all(n);
 
     res.json({ slots: rows });
 });
 
+/* -------------------- CLAIM (FIXED 3-HOUR WINDOWS) -------------------- */
 
 app.post("/api/claim", (req, res) => {
     const photoId = Number(req.body?.photoId);
@@ -136,20 +127,36 @@ app.post("/api/claim", (req, res) => {
         return res.status(400).json({ error: "photoId required" });
     }
 
-    const { start, end } = getClaimWindowUTC();
-
+    /**
+     * Window start:
+     * Floors current hour to nearest multiple of 3
+     * Examples:
+     * 01:xx → 01:00
+     * 03:xx → 01:00
+     * 04:xx → 04:00
+     */
     const alreadyClaimed = db.prepare(`
         SELECT 1
         FROM claims
         WHERE claimed_by = ?
-          AND claimed_at >= datetime('now', '-3 hours')
-            LIMIT 1
+          AND claimed_at >= datetime(
+                strftime('%Y-%m-%d %H:00:00', 'now'),
+                '-' || (strftime('%H','now') % 3) || ' hours'
+          )
+        LIMIT 1
     `).get(req.user.id);
 
     if (alreadyClaimed) {
+        const nextReset = db.prepare(`
+            SELECT datetime(
+                strftime('%Y-%m-%d %H:00:00', 'now'),
+                '+' || (3 - (strftime('%H','now') % 3)) || ' hours'
+            ) AS reset
+        `).get();
+
         return res.status(429).json({
             error: "Already claimed this window",
-            retryAt: end.toISOString()
+            retryAt: nextReset.reset,
         });
     }
 
@@ -166,31 +173,32 @@ app.post("/api/claim", (req, res) => {
         res.json({
             ok: true,
             claimed: photo,
-            nextResetAt: end.toISOString()
         });
     } catch {
         res.status(409).json({ error: "Photo already claimed" });
     }
 });
 
-app.get("/api/claims", (req, res) => {
+/* -------------------- CLAIM VIEWS -------------------- */
+
+app.get("/api/claims", (_, res) => {
     const rows = db.prepare(`
-    SELECT p.id, p.filename, c.claimed_by
-    FROM claims c
-    JOIN photos p ON p.id = c.photo_id
-  `).all();
+        SELECT p.id, p.filename, c.claimed_by
+        FROM claims c
+                 JOIN photos p ON p.id = c.photo_id
+    `).all();
 
     res.json({ claims: rows });
 });
 
 app.get("/api/my-claims", (req, res) => {
     const rows = db.prepare(`
-    SELECT p.id, p.filename, c.claimed_at
-    FROM claims c
-    JOIN photos p ON p.id = c.photo_id
-    WHERE c.claimed_by = ?
-    ORDER BY c.claimed_at DESC
-  `).all(req.user.id);
+        SELECT p.id, p.filename, c.claimed_at
+        FROM claims c
+                 JOIN photos p ON p.id = c.photo_id
+        WHERE c.claimed_by = ?
+        ORDER BY c.claimed_at DESC
+    `).all(req.user.id);
 
     res.json({ cards: rows });
 });
@@ -202,19 +210,21 @@ app.post("/api/unclaim", (req, res) => {
     }
 
     const result = db.prepare(`
-    DELETE FROM claims
-    WHERE photo_id = ?
-      AND claimed_by = ?
-  `).run(photoId, req.user.id);
+        DELETE FROM claims
+        WHERE photo_id = ?
+          AND claimed_by = ?
+    `).run(photoId, req.user.id);
 
     if (result.changes === 0) {
         return res.status(403).json({
-            error: "You do not own this claim or it does not exist"
+            error: "You do not own this claim or it does not exist",
         });
     }
 
     res.json({ ok: true });
 });
+
+/* -------------------- START SERVER -------------------- */
 
 const PORT = process.env.PORT || 3000;
 
