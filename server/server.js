@@ -138,25 +138,25 @@ app.post("/api/claim", (req, res) => {
 
     const { start, end } = getClaimWindowUTC();
 
-    const alreadyClaimed = db.prepare(`
-        SELECT 1
-        FROM claims
-        WHERE claimed_by = ?
-          AND claimed_at >= datetime(?)
-          AND claimed_at < datetime(?)
-            LIMIT 1
-    `).get(
-        req.user.id,
-        start.toISOString(),
-        end.toISOString()
-    );
+    // const alreadyClaimed = db.prepare(`
+//     SELECT 1
+//     FROM claims
+//     WHERE claimed_by = ?
+//       AND claimed_at >= datetime(?)
+//       AND claimed_at < datetime(?)
+//     LIMIT 1
+// `).get(
+//     req.user.id,
+//     start.toISOString(),
+//     end.toISOString()
+// );
 
-    if (alreadyClaimed) {
-        return res.status(429).json({
-            error: "Already claimed this window",
-            retryAt: end.toISOString()
-        });
-    }
+// if (alreadyClaimed) {
+//     return res.status(429).json({
+//         error: "Already claimed this window",
+//         retryAt: end.toISOString()
+//     });
+// }
 
     try {
         db.prepare(`
