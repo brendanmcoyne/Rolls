@@ -98,22 +98,21 @@ app.use("/api", requireAuth);
 
 /* -------------------- PHOTOS -------------------- */
 
-app.post("/api/photos/seed", (req, res) => {
+app.post("/api/photos/seed", async (req, res) => {
     const count = Number(req.body?.count || 400);
-
-    const insert = db.prepare(
-        "INSERT OR IGNORE INTO photos (filename, uploaded_by) VALUES (?, ?)"
+    await db.query(
+        `
+        INSERT INTO photos (filename, uploaded_by)
+        SELECT (gs::text || '.jpg') AS filename, $1
+        FROM generate_series(1, $2) AS gs
+        ON CONFLICT (filename) DO NOTHING
+        `,
+        [req.user.id, count]
     );
 
-    const tx = db.transaction(() => {
-        for (let i = 1; i <= count; i++) {
-            insert.run(`${i}.jpg`, req.user.id);
-        }
-    });
-
-    tx();
     res.json({ ok: true, seeded: count });
 });
+
 
 app.get("/api/roll", async (req, res) => {
     const n = Math.min(Number(req.query.n || 6), 6);
@@ -139,7 +138,6 @@ app.post("/api/claim", async (req, res) => {
         return res.status(400).json({ error: "photoId required" });
     }
 
-    // Check if user already claimed in current 3-hour window (ET)
     const { rows: already } = await db.query(
         `
         SELECT 1
@@ -195,41 +193,51 @@ app.post("/api/claim", async (req, res) => {
     }
 });
 
-app.get("/api/claims", (_, res) => {
-    const rows = db.prepare(`
+app.get("/api/claims", async (req, res) => {
+    const { rows } = await db.query(
+        `
         SELECT p.id, p.filename, c.claimed_by
         FROM claims c
-                 JOIN photos p ON p.id = c.photo_id
-    `).all();
+        JOIN photos p ON p.id = c.photo_id
+        `
+    );
 
     res.json({ claims: rows });
 });
 
-app.get("/api/my-claims", (req, res) => {
-    const rows = db.prepare(`
+
+app.get("/api/my-claims", async (req, res) => {
+    const { rows } = await db.query(
+        `
         SELECT p.id, p.filename, c.claimed_at
         FROM claims c
-                 JOIN photos p ON p.id = c.photo_id
-        WHERE c.claimed_by = ?
+        JOIN photos p ON p.id = c.photo_id
+        WHERE c.claimed_by = $1
         ORDER BY c.claimed_at DESC
-    `).all(req.user.id);
+        `,
+        [req.user.id]
+    );
 
     res.json({ cards: rows });
 });
 
-app.post("/api/unclaim", (req, res) => {
+
+app.post("/api/unclaim", async (req, res) => {
     const photoId = Number(req.body?.photoId);
     if (!photoId) {
         return res.status(400).json({ error: "photoId required" });
     }
 
-    const result = db.prepare(`
+    const result = await db.query(
+        `
         DELETE FROM claims
-        WHERE photo_id = ?
-          AND claimed_by = ?
-    `).run(photoId, req.user.id);
+        WHERE photo_id = $1
+          AND claimed_by = $2
+        `,
+        [photoId, req.user.id]
+    );
 
-    if (result.changes === 0) {
+    if (result.rowCount === 0) {
         return res.status(403).json({
             error: "You do not own this claim or it does not exist",
         });
@@ -237,5 +245,6 @@ app.post("/api/unclaim", (req, res) => {
 
     res.json({ ok: true });
 });
+
 
 export default app;
