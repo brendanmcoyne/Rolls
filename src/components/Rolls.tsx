@@ -84,7 +84,6 @@ export default function Rolls() {
         setIndex(1);
     };
 
-
     const revealNext = () => {
         if (index >= rolled.length) return;
 

@@ -60,7 +60,7 @@ const RemoveButton = styled.button`
     border-radius: 8px;
     font-size: 0.75rem;
     font-weight: 600;
-    background-color: #dc2626;
+    background-color: #dc2625;
     color: white;
     border: none;
     cursor: pointer;
