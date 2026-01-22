@@ -62,8 +62,6 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-/* -------------------- BASIC ROUTES -------------------- */
-
 app.get("/", (_, res) => {
     res.send("Server running ✅");
 });
@@ -92,11 +90,7 @@ app.get("/api/me", (req, res) => {
     res.json(req.user);
 });
 
-/* -------------------- AUTH GUARD -------------------- */
-
 app.use("/api", requireAuth);
-
-/* -------------------- PHOTOS -------------------- */
 
 app.post("/api/photos/seed", async (req, res) => {
     const count = Number(req.body?.count || 400);

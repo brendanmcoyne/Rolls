@@ -2,8 +2,6 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { db } from "./db.js";
 
-/* -------------------- SESSION -------------------- */
-
 passport.serializeUser((user, done) => {
     done(null, user.id);
 });
@@ -21,8 +19,6 @@ passport.deserializeUser(async (id, done) => {
     }
 });
 
-/* -------------------- GOOGLE STRATEGY -------------------- */
-
 passport.use(
     new GoogleStrategy(
         {
@@ -37,7 +33,6 @@ passport.use(
                 const name = profile.displayName || "";
                 const picture = profile.photos?.[0]?.value || null;
 
-                // Find existing user
                 const { rows } = await db.query(
                     `
                     SELECT id, email, name, picture
@@ -50,7 +45,6 @@ passport.use(
                 let user = rows[0];
 
                 if (!user) {
-                    // Create new user
                     const insert = await db.query(
                         `
                         INSERT INTO users (google_sub, email, name, picture)
@@ -62,7 +56,6 @@ passport.use(
 
                     user = insert.rows[0];
                 } else {
-                    // Update existing user info
                     const update = await db.query(
                         `
                         UPDATE users
