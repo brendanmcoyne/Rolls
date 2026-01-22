@@ -24,6 +24,20 @@ CREATE TABLE IF NOT EXISTS claims (
     );
 
 -- INDEXES
+
+-- ROLLS (one roll per user per 3-hour window)
+CREATE TABLE IF NOT EXISTS rolls (
+                                     id SERIAL PRIMARY KEY,
+                                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    window_start TIMESTAMPTZ NOT NULL,
+    photo_ids INTEGER[] NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (user_id, window_start)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_rolls_user_window
+    ON rolls (user_id, window_start);
+
 CREATE INDEX IF NOT EXISTS idx_claims_claimed_by
     ON claims(claimed_by);
 

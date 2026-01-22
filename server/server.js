@@ -115,7 +115,38 @@ app.post("/api/photos/seed", async (req, res) => {
 
 
 app.get("/api/roll", async (req, res) => {
-    const n = Math.min(Number(req.query.n || 6), 6);
+    const n = 6;
+    const { rows: windowRows } = await db.query(`
+        SELECT
+            date_trunc('hour', now())
+                - (extract(hour from now())::int % 3) * interval '1 hour'
+                AS window_start
+    `);
+
+    const windowStart = windowRows[0].window_start;
+
+    const { rows: existing } = await db.query(
+        `
+        SELECT photo_ids
+        FROM rolls
+        WHERE user_id = $1
+          AND window_start = $2
+        `,
+        [req.user.id, windowStart]
+    );
+
+    if (existing.length > 0) {
+        const { rows } = await db.query(
+            `
+            SELECT id, filename
+            FROM photos
+            WHERE id = ANY($1)
+            `,
+            [existing[0].photo_ids]
+        );
+
+        return res.json({ slots: rows });
+    }
 
     const { rows } = await db.query(
         `
@@ -127,6 +158,16 @@ app.get("/api/roll", async (req, res) => {
         LIMIT $1
         `,
         [n]
+    );
+
+    const photoIds = rows.map(r => r.id);
+
+    await db.query(
+        `
+        INSERT INTO rolls (user_id, window_start, photo_ids)
+        VALUES ($1, $2, $3)
+        `,
+        [req.user.id, windowStart, photoIds]
     );
 
     res.json({ slots: rows });
