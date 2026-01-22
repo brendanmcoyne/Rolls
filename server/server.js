@@ -175,18 +175,19 @@ app.get("/api/roll", async (req, res) => {
 
 app.post("/api/claim", async (req, res) => {
     const photoId = Number(req.body?.photoId);
+
     if (!photoId) {
         return res.status(400).json({ error: "photoId required" });
     }
 
     const { rows: already } = await db.query(
         `
-        SELECT 1
-        FROM claims
-        WHERE claimed_by = $1
-          AND claimed_at >= date_trunc('hour', now())
-            - (extract(hour from now())::int % 3) * interval '1 hour'
-        LIMIT 1
+            SELECT 1
+            FROM claims
+            WHERE claimed_by = $1
+              AND claimed_at >= date_trunc('hour', now())
+                - (extract(hour from now())::int % 3) * interval '1 hour'
+                LIMIT 1
         `,
         [req.user.id]
     );
@@ -194,10 +195,10 @@ app.post("/api/claim", async (req, res) => {
     if (already.length > 0) {
         const { rows } = await db.query(
             `
-            SELECT
-                date_trunc('hour', now())
-                + (3 - (extract(hour from now())::int % 3)) * interval '1 hour'
-                AS reset
+                SELECT
+                    date_trunc('hour', now())
+                        + (3 - (extract(hour from now())::int % 3)) * interval '1 hour'
+                        AS reset
             `
         );
 
@@ -207,20 +208,42 @@ app.post("/api/claim", async (req, res) => {
         });
     }
 
+    const { rows: roll } = await db.query(
+        `
+        SELECT photo_ids
+        FROM rolls
+        WHERE user_id = $1
+          AND window_start = (
+            date_trunc('hour', now())
+            - (extract(hour from now())::int % 3) * interval '1 hour'
+          )
+        `,
+        [req.user.id]
+    );
+
+    if (
+        roll.length === 0 ||
+        !roll[0].photo_ids.includes(photoId)
+    ) {
+        return res.status(403).json({
+            error: "Photo not in your roll",
+        });
+    }
+
     try {
         await db.query(
             `
-            INSERT INTO claims (photo_id, claimed_by)
-            VALUES ($1, $2)
+                INSERT INTO claims (photo_id, claimed_by)
+                VALUES ($1, $2)
             `,
             [photoId, req.user.id]
         );
 
         const { rows } = await db.query(
             `
-            SELECT id, filename
-            FROM photos
-            WHERE id = $1
+                SELECT id, filename
+                FROM photos
+                WHERE id = $1
             `,
             [photoId]
         );
@@ -230,7 +253,9 @@ app.post("/api/claim", async (req, res) => {
             claimed: rows[0],
         });
     } catch (err) {
-        res.status(409).json({ error: "Photo already claimed" });
+        res.status(409).json({
+            error: "Photo already claimed",
+        });
     }
 });
 
