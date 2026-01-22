@@ -262,14 +262,19 @@ app.post("/api/claim", async (req, res) => {
 app.get("/api/claims", async (req, res) => {
     const { rows } = await db.query(
         `
-        SELECT p.id, p.filename, c.claimed_by
-        FROM claims c
-        JOIN photos p ON p.id = c.photo_id
+            SELECT
+                p.id,
+                p.filename,
+                u.email
+            FROM claims c
+                     JOIN photos p ON p.id = c.photo_id
+                     JOIN users u ON u.id = c.claimed_by
         `
     );
 
     res.json({ claims: rows });
 });
+
 
 
 app.get("/api/my-claims", async (req, res) => {

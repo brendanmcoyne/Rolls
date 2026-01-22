@@ -7,7 +7,7 @@ const API = "";
 type Claim = {
     id: number;
     filename: string;
-    claimed_by: number;
+    email: string;
 };
 
 const Wrapper = styled.div`
@@ -215,7 +215,14 @@ export default function Gallery() {
                             return (
                                 <SlotBox key={filename}>
                                     <Img src={`/${filename}`} alt={tag} />
-                                    {claim && (<Claimed>Claimed</Claimed>)}
+                                    {claim && (
+                                        <Claimed onClick={(e) => {
+                                                e.stopPropagation();
+                                                alert(`Claimed by ${claim.email}`);}}>
+                                            Claimed
+                                        </Claimed>
+                                    )}
+
                                 </SlotBox>
                             );
                         })}
