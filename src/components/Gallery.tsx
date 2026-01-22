@@ -123,6 +123,7 @@ const Claimed = styled.p`
     color: white;
     border: none;
     opacity: 0.9;
+    cursor: pointer;
 `;
 
 const Title = styled.h1`
@@ -143,7 +144,7 @@ const ClaimPopup = styled.div`
     font-size: 14px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
     z-index: 1000;
-    cursor: pointer;
+    
 `;
 
 export default function Gallery() {
