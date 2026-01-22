@@ -132,10 +132,24 @@ const Title = styled.h1`
     text-align: center;
 `;
 
+const ClaimPopup = styled.div`
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111827;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+`;
+
 export default function Gallery() {
     const [query, setQuery] = useState("");
     const [activeTag, setActiveTag] = useState<string | null>(null);
     const [claims, setClaims] = useState<Claim[]>([]);
+    const [info, setInfo] = useState<string | null>(null);
 
     useEffect(() => {
         fetch(`${API}/api/claims`, {
@@ -216,9 +230,16 @@ export default function Gallery() {
                                 <SlotBox key={filename}>
                                     <Img src={`/${filename}`} alt={tag} />
                                     {claim && (
-                                        <Claimed onClick={(e) => {
+                                        <Claimed
+                                            onClick={(e) => {
                                                 e.stopPropagation();
-                                                alert(`Claimed by ${claim.email}`);}}>
+                                                setInfo(`Claimed by ${claim.email}`);
+
+                                                setTimeout(() => {
+                                                    setInfo(null);
+                                                }, 2500);
+                                            }}
+                                        >
                                             Claimed
                                         </Claimed>
                                     )}
@@ -229,6 +250,7 @@ export default function Gallery() {
                     </Grid>
                 </>
             )}
+            {info && <ClaimPopup>{info}</ClaimPopup>}
         </Wrapper>
     );
 }
