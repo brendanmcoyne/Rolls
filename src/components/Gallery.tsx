@@ -82,10 +82,10 @@ const BackButton = styled.button`
 
 const Grid = styled.div`
     display: grid;
-    grid-template-columns: repeat(3, 350px);
+    grid-template-columns: repeat(4, 250px);
     gap: 16px;
     @media screen and (max-width: 750px) {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     }
 `;
 
