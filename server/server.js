@@ -173,7 +173,6 @@ app.post("/api/claim", async (req, res) => {
         return res.status(400).json({ error: "photoId required" });
     }
 
-    // ✅ TOTAL CLAIM LIMIT
     const { rows: countRows } = await db.query(
         `
             SELECT COUNT(*)::int AS count
@@ -189,7 +188,6 @@ app.post("/api/claim", async (req, res) => {
         });
     }
 
-    // ⏱ window restriction (existing logic)
     const { rows: already } = await db.query(
         `
             SELECT 1
@@ -216,7 +214,6 @@ app.post("/api/claim", async (req, res) => {
         });
     }
 
-    // 🎲 ensure photo was rolled
     const { rows: roll } = await db.query(
         `
         SELECT photo_ids
@@ -236,7 +233,6 @@ app.post("/api/claim", async (req, res) => {
         });
     }
 
-    // 🧾 claim
     try {
         await db.query(
             `
@@ -310,6 +306,5 @@ app.post("/api/unclaim", async (req, res) => {
 
     res.json({ ok: true });
 });
-
 
 export default app;

@@ -168,6 +168,11 @@ export default function Gallery() {
         return map;
     }, [claims]);
 
+    const allPhotos = useMemo(() => {
+        return Object.entries(NAMES);
+    }, []);
+
+
     const groupedResults = useMemo(() => {
         const groups: Record<string, number> = {};
 
@@ -209,7 +214,31 @@ export default function Gallery() {
                 />
             </SearchRow>
 
-            {!activeTag && (
+            {!activeTag && !query.trim() && (
+                <Grid>
+                    {allPhotos.map(([filename, tag]) => {
+                        const claim = claimedByFilename.get(filename);
+                        return (
+                            <SlotBox key={filename}>
+                                <Img src={`/${filename}`} alt={tag} />
+                                {claim && (
+                                    <Claimed
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setInfo(`Claimed by ${claim.email}`);
+                                            setTimeout(() => setInfo(null), 2500);
+                                        }}
+                                    >
+                                        Claimed
+                                    </Claimed>
+                                )}
+                            </SlotBox>
+                        );
+                    })}
+                </Grid>
+            )}
+
+            {!activeTag && query.trim() && (
                 <GroupGrid>
                     {groupedResults.map(({ tag, count }) => (
                         <GroupCard key={tag} onClick={() => setActiveTag(tag)}>
@@ -221,6 +250,7 @@ export default function Gallery() {
                     ))}
                 </GroupGrid>
             )}
+
 
             {activeTag && (
                 <>
