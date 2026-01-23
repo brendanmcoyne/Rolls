@@ -169,11 +169,27 @@ app.get("/api/roll", async (req, res) => {
 
 app.post("/api/claim", async (req, res) => {
     const photoId = Number(req.body?.photoId);
-
     if (!photoId) {
         return res.status(400).json({ error: "photoId required" });
     }
 
+    // ✅ TOTAL CLAIM LIMIT
+    const { rows: countRows } = await db.query(
+        `
+            SELECT COUNT(*)::int AS count
+            FROM claims
+            WHERE claimed_by = $1
+        `,
+        [req.user.id]
+    );
+
+    if (countRows[0].count >= 20) {
+        return res.status(403).json({
+            error: "Maximum of 20 photos claimed",
+        });
+    }
+
+    // ⏱ window restriction (existing logic)
     const { rows: already } = await db.query(
         `
             SELECT 1
@@ -187,14 +203,12 @@ app.post("/api/claim", async (req, res) => {
     );
 
     if (already.length > 0) {
-        const { rows } = await db.query(
-            `
-                SELECT
-                    date_trunc('hour', now())
-                        + (3 - (extract(hour from now())::int % 3)) * interval '1 hour'
-                        AS reset
-            `
-        );
+        const { rows } = await db.query(`
+            SELECT
+                date_trunc('hour', now())
+                + (3 - (extract(hour from now())::int % 3)) * interval '1 hour'
+                AS reset
+        `);
 
         return res.status(429).json({
             error: "Already claimed this window",
@@ -202,6 +216,7 @@ app.post("/api/claim", async (req, res) => {
         });
     }
 
+    // 🎲 ensure photo was rolled
     const { rows: roll } = await db.query(
         `
         SELECT photo_ids
@@ -215,15 +230,13 @@ app.post("/api/claim", async (req, res) => {
         [req.user.id]
     );
 
-    if (
-        roll.length === 0 ||
-        !roll[0].photo_ids.includes(photoId)
-    ) {
+    if (!roll.length || !roll[0].photo_ids.includes(photoId)) {
         return res.status(403).json({
             error: "Photo not in your roll",
         });
     }
 
+    // 🧾 claim
     try {
         await db.query(
             `
@@ -233,25 +246,12 @@ app.post("/api/claim", async (req, res) => {
             [photoId, req.user.id]
         );
 
-        const { rows } = await db.query(
-            `
-                SELECT id, filename
-                FROM photos
-                WHERE id = $1
-            `,
-            [photoId]
-        );
-
-        res.json({
-            ok: true,
-            claimed: rows[0],
-        });
-    } catch (err) {
-        res.status(409).json({
-            error: "Photo already claimed",
-        });
+        res.json({ ok: true });
+    } catch {
+        res.status(409).json({ error: "Photo already claimed" });
     }
 });
+
 
 app.get("/api/claims", async (req, res) => {
     const { rows } = await db.query(

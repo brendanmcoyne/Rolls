@@ -169,17 +169,21 @@ export default function Gallery() {
     }, [claims]);
 
     const groupedResults = useMemo(() => {
-        if (!query.trim()) return [];
-
         const groups: Record<string, number> = {};
 
         Object.values(NAMES).forEach((tag) => {
-            const people = tag.split("&").map((p) => p.trim());
-            if (people.some((p) =>
-                p.toLowerCase().includes(query.toLowerCase())
-            )) {
-                groups[tag] = (groups[tag] || 0) + 1;
+            if (query.trim()) {
+                const people = tag.split("&").map((p) => p.trim());
+                if (
+                    !people.some((p) =>
+                        p.toLowerCase().includes(query.toLowerCase())
+                    )
+                ) {
+                    return;
+                }
             }
+
+            groups[tag] = (groups[tag] || 0) + 1;
         });
 
         return Object.entries(groups).map(([tag, count]) => ({
@@ -187,6 +191,7 @@ export default function Gallery() {
             count,
         }));
     }, [query]);
+
 
     const photosForActiveTag = useMemo(() => {
         if (!activeTag) return [];
