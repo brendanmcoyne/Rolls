@@ -89,29 +89,6 @@ const Grid = styled.div`
     }
 `;
 
-const SlotBox = styled.div`
-    aspect-ratio: 1 / 1;
-    background-color: #374151;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    transition: 0.3s;
-    &:hover {
-        transform: scale(1.05);
-        @media screen and (max-width: 750px) {
-            transform: none;
-        }
-    }
-`;
-
-const Img = styled.img`
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    display: block;
-`;
-
 const Claimed = styled.p`
     position: absolute;
     bottom: 8px;
@@ -148,6 +125,37 @@ const ClaimPopup = styled.div`
     
 `;
 
+const SlotBox = styled.div`
+    aspect-ratio: 1 / 1;
+    background-color: #374151;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    contain: layout paint;
+`;
+
+const Img = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: transform 0.18s ease;
+    will-change: transform;
+
+    ${SlotBox}:hover & {
+        transform: scale(1.05);
+    }
+
+    @media screen and (max-width: 750px) {
+        transition: none;
+
+        ${SlotBox}:hover & {
+            transform: none;
+        }
+    }
+`;
+
 const PaginationRow = styled.div`
     display: flex;
     justify-content: center;
@@ -182,7 +190,7 @@ export default function Gallery() {
     const [claims, setClaims] = useState<Claim[]>([]);
     const [info, setInfo] = useState<string | null>(null);
 
-    const PHOTOS_PER_PAGE = 40;
+    const PHOTOS_PER_PAGE = 30;
     const [page, setPage] = useState(0);
 
     useEffect(() => {
@@ -330,7 +338,7 @@ export default function Gallery() {
                             const claim = claimedByFilename.get(filename);
                             return (
                                 <SlotBox key={filename}>
-                                    <Img src={`/${filename}`} alt={tag} />
+                                    <Img src={`/${filename}`} alt={tag} loading="lazy" decoding="async" />
                                     {claim && (
                                         <Claimed
                                             onClick={(e) => {
