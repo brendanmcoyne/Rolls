@@ -82,7 +82,7 @@ const BackButton = styled.button`
 
 const Grid = styled.div`
     display: grid;
-    grid-template-columns: repeat(3, 250px);
+    grid-template-columns: repeat(4, 250px);
     gap: 16px;
     @media screen and (max-width: 750px) {
         grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -190,7 +190,7 @@ export default function Gallery() {
     const [claims, setClaims] = useState<Claim[]>([]);
     const [info, setInfo] = useState<string | null>(null);
 
-    const PHOTOS_PER_PAGE = 30;
+    const PHOTOS_PER_PAGE = 40;
     const [page, setPage] = useState(0);
 
     useEffect(() => {
@@ -266,6 +266,14 @@ export default function Gallery() {
                 />
             </SearchRow>
 
+            {!query.trim() && totalPages > 1 && (
+                <PaginationRow>
+                    <PageButton disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>← Prev</PageButton>
+                    <PageText>Page {page + 1} of {totalPages}</PageText>
+                    <PageButton disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>Next →</PageButton>
+                </PaginationRow>
+            )}
+
             {!activeTag && !query.trim() && (
                 <Grid>
                     {pagedPhotos.map(([filename, tag]) => {
@@ -288,27 +296,6 @@ export default function Gallery() {
                         );
                     })}
                 </Grid>
-            )}
-            {totalPages > 1 && (
-                <PaginationRow>
-                    <PageButton
-                        disabled={page === 0}
-                        onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    >
-                        ← Prev
-                    </PageButton>
-
-                    <PageText>
-                        Page {page + 1} of {totalPages}
-                    </PageText>
-
-                    <PageButton
-                        disabled={page >= totalPages - 1}
-                        onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                    >
-                        Next →
-                    </PageButton>
-                </PaginationRow>
             )}
 
             {!activeTag && query.trim() && (

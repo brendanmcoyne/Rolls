@@ -24,7 +24,7 @@ export default function Rules() {
             time. </p>
 
             <p>For every 6 photos you view, you may only claim 1 of those 6. Once every 3 hours you can claim another
-                photo (1 o'clock, 4 o'clock, 7 o'clock, 10 o'clock).</p>
+                photo (2 o'clock, 5 o'clock, 8 o'clock, 11 o'clock).</p>
 
             <p>Once a photo is claimed, no one else is able to get that photo. If you decide to remove
             a photo from your collection, that photo is put back into the list of available photos.</p>
