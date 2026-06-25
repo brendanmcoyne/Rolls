@@ -109,6 +109,7 @@ const Img = styled.img`
     height: 100%;
     object-fit: cover;
     object-position: center;
+    display: block;
 `;
 
 const Claimed = styled.p`
@@ -147,11 +148,42 @@ const ClaimPopup = styled.div`
     
 `;
 
+const PaginationRow = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+`;
+
+const PageButton = styled.button`
+    background: #1f2937;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 16px;
+    cursor: pointer;
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+`;
+
+const PageText = styled.div`
+    font-size: 14px;
+    opacity: 0.85;
+`;
+
 export default function Gallery() {
     const [query, setQuery] = useState("");
     const [activeTag, setActiveTag] = useState<string | null>(null);
     const [claims, setClaims] = useState<Claim[]>([]);
     const [info, setInfo] = useState<string | null>(null);
+
+    const PHOTOS_PER_PAGE = 40;
+    const [page, setPage] = useState(0);
 
     useEffect(() => {
         fetch(`${API}/api/claims`, {
@@ -169,9 +201,21 @@ export default function Gallery() {
     }, [claims]);
 
     const allPhotos = useMemo(() => {
-        return Object.entries(NAMES);
+        return Object.entries(NAMES).sort(
+            ([a], [b]) => Number(a.replace(".jpg", "")) - Number(b.replace(".jpg", ""))
+        );
     }, []);
 
+    const totalPages = Math.ceil(allPhotos.length / PHOTOS_PER_PAGE);
+
+    const pagedPhotos = useMemo(() => {
+        const start = page * PHOTOS_PER_PAGE;
+        return allPhotos.slice(start, start + PHOTOS_PER_PAGE);
+    }, [allPhotos, page]);
+
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }, [page]);
 
     const groupedResults = useMemo(() => {
         const groups: Record<string, number> = {};
@@ -216,11 +260,11 @@ export default function Gallery() {
 
             {!activeTag && !query.trim() && (
                 <Grid>
-                    {allPhotos.map(([filename, tag]) => {
+                    {pagedPhotos.map(([filename, tag]) => {
                         const claim = claimedByFilename.get(filename);
                         return (
                             <SlotBox key={filename}>
-                                <Img src={`/${filename}`} alt={tag} />
+                                <Img src={`/${filename}`} alt={tag} loading="lazy" decoding="async" />
                                 {claim && (
                                     <Claimed
                                         onClick={(e) => {
@@ -236,6 +280,27 @@ export default function Gallery() {
                         );
                     })}
                 </Grid>
+            )}
+            {totalPages > 1 && (
+                <PaginationRow>
+                    <PageButton
+                        disabled={page === 0}
+                        onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    >
+                        ← Prev
+                    </PageButton>
+
+                    <PageText>
+                        Page {page + 1} of {totalPages}
+                    </PageText>
+
+                    <PageButton
+                        disabled={page >= totalPages - 1}
+                        onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    >
+                        Next →
+                    </PageButton>
+                </PaginationRow>
             )}
 
             {!activeTag && query.trim() && (
