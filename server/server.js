@@ -92,6 +92,23 @@ app.get("/api/me", (req, res) => {
 
 app.use("/api", requireAuth);
 
+app.get("/api/photo-stats", async (req, res) => {
+    const { rows } = await db.query(`
+    SELECT
+      (SELECT COUNT(*)::int FROM photos) AS total,
+      (SELECT COUNT(*)::int FROM claims) AS claimed
+  `);
+
+    const total = rows[0].total;
+    const claimed = rows[0].claimed;
+
+    res.json({
+        total,
+        claimed,
+        remaining: total - claimed,
+    });
+});
+
 app.post("/api/photos/seed", async (req, res) => {
     const count = Number(req.body?.count || 460);
     await db.query(

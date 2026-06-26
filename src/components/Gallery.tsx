@@ -267,7 +267,7 @@ export default function Gallery() {
             </SearchRow>
 
             {!query.trim() && totalPages > 1 && (
-                <PaginationRow>
+                <PaginationRow style={{marginBottom: "20px"}}>
                     <PageButton disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>← Prev</PageButton>
                     <PageText>Page {page + 1} of {totalPages}</PageText>
                     <PageButton disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>Next →</PageButton>
