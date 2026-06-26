@@ -110,7 +110,7 @@ app.get("/api/photo-stats", async (req, res) => {
 });
 
 app.post("/api/photos/seed", async (req, res) => {
-    const count = Number(req.body?.count || 460);
+    const count = Number(req.body?.count || 560);
     await db.query(
         `
         INSERT INTO photos (filename, uploaded_by)
