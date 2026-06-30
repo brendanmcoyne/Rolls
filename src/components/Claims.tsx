@@ -77,10 +77,55 @@ const Empty = styled.div`
     text-align: center;
 `;
 
+const ModalOverlay = styled.div`
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+`;
+
+const ModalBox = styled.div`
+    background: #111827;
+    padding: 24px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 420px;
+    text-align: center;
+`;
+
+const ModalActions = styled.div`
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+`;
+
+const ConfirmButton = styled.button`
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    background: #dc2625;
+    color: white;
+`;
+
+const CancelButton = styled.button`
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+`;
+
 export default function Claims() {
     const [cards, setCards] = useState<Card[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [dropTarget, setDropTarget] = useState<Card | null>(null);
 
     useEffect(() => {
         fetch(`${API}/api/my-claims`, {
@@ -130,12 +175,35 @@ export default function Claims() {
                     {cards.map((card) => (
                         <CardBox key={card.id}>
                             <Img src={`/${card.filename}`} alt={card.filename} />
-                            <RemoveButton onClick={() => unclaim(card.id)}>
-                                Remove
+                            <RemoveButton onClick={() => setDropTarget(card)}>
+                                Drop
                             </RemoveButton>
                         </CardBox>
                     ))}
                 </Grid>
+            )}
+
+            {dropTarget && (
+                <ModalOverlay onClick={() => setDropTarget(null)}>
+                    <ModalBox onClick={(e) => e.stopPropagation()}>
+                        <p>Are you sure you want to drop this photo?</p>
+
+                        <ModalActions>
+                            <ConfirmButton
+                                onClick={async () => {
+                                    await unclaim(dropTarget.id);
+                                    setDropTarget(null);
+                                }}
+                            >
+                                Yes
+                            </ConfirmButton>
+
+                            <CancelButton onClick={() => setDropTarget(null)}>
+                                No
+                            </CancelButton>
+                        </ModalActions>
+                    </ModalBox>
+                </ModalOverlay>
             )}
         </Page>
     );

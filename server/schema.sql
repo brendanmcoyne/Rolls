@@ -66,3 +66,6 @@ CREATE INDEX IF NOT EXISTS idx_trade_requests_recipient
 
 CREATE INDEX IF NOT EXISTS idx_trade_requests_requester
     ON trade_requests(requester_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_trade_requests_recipient_status_time
+    ON trade_requests(recipient_id, status, responded_at DESC, created_at DESC);

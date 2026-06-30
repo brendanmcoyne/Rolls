@@ -52,6 +52,14 @@ export default function Trades() {
     const [trades, setTrades] = useState<Trade[]>([]);
     const [msg, setMsg] = useState("");
 
+    const activeTrades = trades.filter((trade) => trade.status === "pending");
+    const oldTrades = trades.filter((trade) => trade.status !== "pending").slice(0, 10);
+    const visibleTrades = [...activeTrades, ...oldTrades];
+
+    function capitalizeStatus(status: string) {
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+
     async function fetchTrades() {
         const res = await fetch(`${API}/api/trades/incoming`, {
             credentials: "include",
@@ -110,7 +118,7 @@ export default function Trades() {
 
             {trades.length === 0 && <p>No trades yet.</p>}
 
-            {trades.map((trade) => (
+            {visibleTrades.map((trade) => (
                 <Card key={trade.id}>
                     <p>
                         <strong>{trade.requester_email}</strong> wants {" "}
@@ -140,7 +148,7 @@ export default function Trades() {
                             <Button onClick={() => respond(trade.id, "reject")}>Reject</Button>
                         </div>
                     ) : (
-                        <p>Status: {trade.status}</p>
+                        <p>Status: {capitalizeStatus(trade.status)}</p>
                     )}
                 </Card>
             ))}

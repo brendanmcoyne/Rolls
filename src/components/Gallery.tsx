@@ -117,6 +117,7 @@ const Claimed = styled.div<{ $mine?: boolean }>`
     background-color: ${({ $mine }) => ($mine ? "#16a34a" : "#ffbf1f")};
     color: white;
     opacity: 0.9;
+    cursor: pointer;
 `;
 
 const TradeButton = styled.button`

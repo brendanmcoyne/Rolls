@@ -366,21 +366,51 @@ app.post("/api/trades", async (req, res) => {
 app.get("/api/trades/incoming", async (req, res) => {
     const { rows } = await db.query(
         `
-    SELECT
-      tr.id,
-      tr.status,
-      tr.created_at,
-      requester.email AS requester_email,
-      requested.filename AS requested_filename,
-      offered.filename AS offered_filename,
-      requested.id AS requested_photo_id,
-      offered.id AS offered_photo_id
-    FROM trade_requests tr
-    JOIN users requester ON requester.id = tr.requester_id
-    JOIN photos requested ON requested.id = tr.requested_photo_id
-    JOIN photos offered ON offered.id = tr.offered_photo_id
-    WHERE tr.recipient_id = $1
-    ORDER BY tr.created_at DESC
+    (
+        SELECT
+            tr.id,
+            tr.status,
+            tr.created_at,
+            tr.responded_at,
+            requester.email AS requester_email,
+            requested.filename AS requested_filename,
+            offered.filename AS offered_filename,
+            requested.id AS requested_photo_id,
+            offered.id AS offered_photo_id
+        FROM trade_requests tr
+        JOIN users requester ON requester.id = tr.requester_id
+        JOIN photos requested ON requested.id = tr.requested_photo_id
+        JOIN photos offered ON offered.id = tr.offered_photo_id
+        WHERE tr.recipient_id = $1
+          AND tr.status = 'pending'
+    )
+
+    UNION ALL
+
+    (
+        SELECT
+            tr.id,
+            tr.status,
+            tr.created_at,
+            tr.responded_at,
+            requester.email AS requester_email,
+            requested.filename AS requested_filename,
+            offered.filename AS offered_filename,
+            requested.id AS requested_photo_id,
+            offered.id AS offered_photo_id
+        FROM trade_requests tr
+        JOIN users requester ON requester.id = tr.requester_id
+        JOIN photos requested ON requested.id = tr.requested_photo_id
+        JOIN photos offered ON offered.id = tr.offered_photo_id
+        WHERE tr.recipient_id = $1
+          AND tr.status <> 'pending'
+        ORDER BY COALESCE(tr.responded_at, tr.created_at) DESC
+        LIMIT 10
+    )
+
+    ORDER BY
+        status = 'pending' DESC,
+        COALESCE(responded_at, created_at) DESC
     `,
         [req.user.id]
     );
