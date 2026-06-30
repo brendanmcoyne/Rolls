@@ -215,6 +215,38 @@ const PageText = styled.div`
     opacity: 0.85;
 `;
 
+const OfferGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+    max-height: 320px;
+    overflow-y: auto;
+`;
+
+const OfferCard = styled.button<{ $selected?: boolean }>`
+    background: #1f2937;
+    border: 3px solid ${({ $selected }) => ($selected ? "#3b82f6" : "transparent")};
+    border-radius: 12px;
+    padding: 6px;
+    cursor: pointer;
+    color: white;
+    text-align: center;
+`;
+
+const OfferImg = styled.img`
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+`;
+
+const OfferName = styled.div`
+    font-size: 13px;
+    margin-top: 6px;
+`;
+
 export default function Gallery({ user }: { user: User }) {
     const [query, setQuery] = useState("");
     const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -357,7 +389,20 @@ export default function Gallery({ user }: { user: User }) {
                                 <Img src={`/${filename}`} alt={tag} loading="lazy" decoding="async" />
                                 {claim && (
                                     <BadgeRow>
-                                        <Claimed $mine={claim.email === user.email}>
+                                        <Claimed
+                                            $mine={claim.email === user.email}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+
+                                                if (claim.email === user.email) {
+                                                    setInfo("Claimed by you!");
+                                                } else {
+                                                    setInfo(`Claimed by: ${claim.email}`);
+                                                }
+
+                                                setTimeout(() => setInfo(null), 2500);
+                                            }}
+                                        >
                                             Claimed
                                         </Claimed>
 
@@ -409,7 +454,20 @@ export default function Gallery({ user }: { user: User }) {
                                     <Img src={`/${filename}`} alt={tag} loading="lazy" decoding="async" />
                                     {claim && (
                                         <BadgeRow>
-                                            <Claimed $mine={claim.email === user.email}>
+                                            <Claimed
+                                                $mine={claim.email === user.email}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+
+                                                    if (claim.email === user.email) {
+                                                        setInfo("Claimed by you!");
+                                                    } else {
+                                                        setInfo(`Claimed by: ${claim.email}`);
+                                                    }
+
+                                                    setTimeout(() => setInfo(null), 2500);
+                                                }}
+                                            >
                                                 Claimed
                                             </Claimed>
 
@@ -465,19 +523,22 @@ export default function Gallery({ user }: { user: User }) {
                         </p>
 
                         <p>Choose one of your photos to offer:</p>
-
-                        <select
-                            value={offeredPhotoId ?? ""}
-                            onChange={(e) => setOfferedPhotoId(Number(e.target.value))}
-                            style={{ width: "100%", padding: 10, marginBottom: 16 }}
-                        >
-                            <option value="">Select a photo</option>
+                        <OfferGrid>
                             {myClaims.map((claim) => (
-                                <option key={claim.id} value={claim.id}>
-                                    {NAMES[claim.filename] ?? claim.filename}
-                                </option>
+                                <OfferCard
+                                    key={claim.id}
+                                    type="button"
+                                    $selected={offeredPhotoId === claim.id}
+                                    onClick={() => setOfferedPhotoId(claim.id)}
+                                >
+                                    <OfferImg
+                                        src={`/${claim.filename}`}
+                                        alt={NAMES[claim.filename] ?? claim.filename}
+                                    />
+                                    <OfferName>{NAMES[claim.filename] ?? "Unknown"}</OfferName>
+                                </OfferCard>
                             ))}
-                        </select>
+                        </OfferGrid>
 
                         <button disabled={!offeredPhotoId} onClick={sendTrade}>
                             Send Trade
