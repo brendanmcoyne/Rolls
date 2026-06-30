@@ -94,10 +94,10 @@ app.use("/api", requireAuth);
 
 app.get("/api/photo-stats", async (req, res) => {
     const { rows } = await db.query(`
-    SELECT
-      (SELECT COUNT(*)::int FROM photos) AS total,
-      (SELECT COUNT(*)::int FROM claims) AS claimed
-  `);
+        SELECT
+                (SELECT COUNT(*)::int FROM photos) AS total,
+                (SELECT COUNT(*)::int FROM claims) AS claimed
+    `);
 
     const total = rows[0].total;
     const claimed = rows[0].claimed;
@@ -113,10 +113,10 @@ app.post("/api/photos/seed", async (req, res) => {
     const count = Number(req.body?.count || 560);
     await db.query(
         `
-        INSERT INTO photos (filename, uploaded_by)
-        SELECT (gs::text || '.jpg') AS filename, $1
-        FROM generate_series(1, $2) AS gs
-        ON CONFLICT (filename) DO NOTHING
+            INSERT INTO photos (filename, uploaded_by)
+            SELECT (gs::text || '.jpg') AS filename, $1
+            FROM generate_series(1, $2) AS gs
+                ON CONFLICT (filename) DO NOTHING
         `,
         [req.user.id, count]
     );
@@ -138,10 +138,10 @@ app.get("/api/roll", async (req, res) => {
 
     const { rows: existing } = await db.query(
         `
-        SELECT photo_ids
-        FROM rolls
-        WHERE user_id = $1
-          AND window_start = $2
+            SELECT photo_ids
+            FROM rolls
+            WHERE user_id = $1
+              AND window_start = $2
         `,
         [req.user.id, windowStart]
     );
@@ -149,9 +149,9 @@ app.get("/api/roll", async (req, res) => {
     if (existing.length > 0) {
         const { rows } = await db.query(
             `
-            SELECT id, filename
-            FROM photos
-            WHERE id = ANY($1)
+                SELECT id, filename
+                FROM photos
+                WHERE id = ANY($1)
             `,
             [existing[0].photo_ids]
         );
@@ -161,12 +161,12 @@ app.get("/api/roll", async (req, res) => {
 
     const { rows } = await db.query(
         `
-        SELECT p.id, p.filename
-        FROM photos p
-        LEFT JOIN claims c ON c.photo_id = p.id
-        WHERE c.photo_id IS NULL
-        ORDER BY RANDOM()
-        LIMIT $1
+            SELECT p.id, p.filename
+            FROM photos p
+                     LEFT JOIN claims c ON c.photo_id = p.id
+            WHERE c.photo_id IS NULL
+            ORDER BY RANDOM()
+                LIMIT $1
         `,
         [n]
     );
@@ -175,8 +175,8 @@ app.get("/api/roll", async (req, res) => {
 
     await db.query(
         `
-        INSERT INTO rolls (user_id, window_start, photo_ids)
-        VALUES ($1, $2, $3)
+            INSERT INTO rolls (user_id, window_start, photo_ids)
+            VALUES ($1, $2, $3)
         `,
         [req.user.id, windowStart, photoIds]
     );
@@ -221,8 +221,8 @@ app.post("/api/claim", async (req, res) => {
         const { rows } = await db.query(`
             SELECT
                 date_trunc('hour', now())
-                + (3 - (extract(hour from now())::int % 3)) * interval '1 hour'
-                AS reset
+                    + (3 - (extract(hour from now())::int % 3)) * interval '1 hour'
+                    AS reset
         `);
 
         return res.status(429).json({
@@ -233,13 +233,13 @@ app.post("/api/claim", async (req, res) => {
 
     const { rows: roll } = await db.query(
         `
-        SELECT photo_ids
-        FROM rolls
-        WHERE user_id = $1
-          AND window_start = (
-            date_trunc('hour', now())
-            - (extract(hour from now())::int % 3) * interval '1 hour'
-          )
+            SELECT photo_ids
+            FROM rolls
+            WHERE user_id = $1
+              AND window_start = (
+                date_trunc('hour', now())
+                    - (extract(hour from now())::int % 3) * interval '1 hour'
+                )
         `,
         [req.user.id]
     );
@@ -287,11 +287,11 @@ app.get("/api/claims", async (req, res) => {
 app.get("/api/my-claims", async (req, res) => {
     const { rows } = await db.query(
         `
-        SELECT p.id, p.filename, c.claimed_at
-        FROM claims c
-        JOIN photos p ON p.id = c.photo_id
-        WHERE c.claimed_by = $1
-        ORDER BY c.claimed_at DESC
+            SELECT p.id, p.filename, c.claimed_at
+            FROM claims c
+                     JOIN photos p ON p.id = c.photo_id
+            WHERE c.claimed_by = $1
+            ORDER BY c.claimed_at DESC
         `,
         [req.user.id]
     );
@@ -315,10 +315,10 @@ app.post("/api/trades", async (req, res) => {
 
     const { rows: requestedRows } = await db.query(
         `
-    SELECT claimed_by
-    FROM claims
-    WHERE photo_id = $1
-    `,
+            SELECT claimed_by
+            FROM claims
+            WHERE photo_id = $1
+        `,
         [requestedPhotoId]
     );
 
@@ -334,11 +334,11 @@ app.post("/api/trades", async (req, res) => {
 
     const { rows: offeredRows } = await db.query(
         `
-    SELECT 1
-    FROM claims
-    WHERE photo_id = $1
-      AND claimed_by = $2
-    `,
+            SELECT 1
+            FROM claims
+            WHERE photo_id = $1
+              AND claimed_by = $2
+        `,
         [offeredPhotoId, requesterId]
     );
 
@@ -348,15 +348,15 @@ app.post("/api/trades", async (req, res) => {
 
     const { rows } = await db.query(
         `
-    INSERT INTO trade_requests (
-      requester_id,
-      recipient_id,
-      requested_photo_id,
-      offered_photo_id
-    )
-    VALUES ($1, $2, $3, $4)
-    RETURNING *
-    `,
+            INSERT INTO trade_requests (
+                requester_id,
+                recipient_id,
+                requested_photo_id,
+                offered_photo_id
+            )
+            VALUES ($1, $2, $3, $4)
+                RETURNING *
+        `,
         [requesterId, recipientId, requestedPhotoId, offeredPhotoId]
     );
 
@@ -364,51 +364,28 @@ app.post("/api/trades", async (req, res) => {
 });
 
 app.get("/api/trades/incoming", async (req, res) => {
-    try {
-        const baseSelect = `
-            SELECT
-                tr.id,
-                tr.status,
-                tr.created_at,
-                tr.responded_at,
-                requester.email AS requester_email,
-                requested.filename AS requested_filename,
-                offered.filename AS offered_filename,
-                requested.id AS requested_photo_id,
-                offered.id AS offered_photo_id
-            FROM trade_requests tr
-            JOIN users requester ON requester.id = tr.requester_id
-            JOIN photos requested ON requested.id = tr.requested_photo_id
-            JOIN photos offered ON offered.id = tr.offered_photo_id
-            WHERE tr.recipient_id = $1
-        `;
+    const { rows } = await db.query(
+        `
+    SELECT
+      tr.id,
+      tr.status,
+      tr.created_at,
+      requester.email AS requester_email,
+      requested.filename AS requested_filename,
+      offered.filename AS offered_filename,
+      requested.id AS requested_photo_id,
+      offered.id AS offered_photo_id
+    FROM trade_requests tr
+    JOIN users requester ON requester.id = tr.requester_id
+    JOIN photos requested ON requested.id = tr.requested_photo_id
+    JOIN photos offered ON offered.id = tr.offered_photo_id
+    WHERE tr.recipient_id = $1
+    ORDER BY tr.created_at DESC
+    `,
+        [req.user.id]
+    );
 
-        const { rows: pendingTrades } = await db.query(
-            `
-            ${baseSelect}
-              AND tr.status = 'pending'
-            ORDER BY tr.created_at DESC
-            `,
-            [req.user.id]
-        );
-
-        const { rows: oldTrades } = await db.query(
-            `
-            ${baseSelect}
-              AND tr.status <> 'pending'
-            ORDER BY COALESCE(tr.responded_at, tr.created_at) DESC
-            LIMIT 10
-            `,
-            [req.user.id]
-        );
-
-        res.json({
-            trades: [...pendingTrades, ...oldTrades],
-        });
-    } catch (err) {
-        console.error("Failed to load incoming trades:", err);
-        res.status(500).json({ error: "Failed to load trades" });
-    }
+    res.json({ trades: rows });
 });
 
 app.post("/api/trades/:id/reject", async (req, res) => {
@@ -416,13 +393,13 @@ app.post("/api/trades/:id/reject", async (req, res) => {
 
     const result = await db.query(
         `
-    UPDATE trade_requests
-    SET status = 'rejected',
-        responded_at = now()
-    WHERE id = $1
-      AND recipient_id = $2
-      AND status = 'pending'
-    `,
+            UPDATE trade_requests
+            SET status = 'rejected',
+                responded_at = now()
+            WHERE id = $1
+              AND recipient_id = $2
+              AND status = 'pending'
+        `,
         [tradeId, req.user.id]
     );
 
@@ -443,13 +420,13 @@ app.post("/api/trades/:id/accept", async (req, res) => {
 
         const { rows } = await client.query(
             `
-      SELECT *
-      FROM trade_requests
-      WHERE id = $1
-        AND recipient_id = $2
-        AND status = 'pending'
-      FOR UPDATE
-      `,
+                SELECT *
+                FROM trade_requests
+                WHERE id = $1
+                  AND recipient_id = $2
+                  AND status = 'pending'
+                    FOR UPDATE
+            `,
             [tradeId, req.user.id]
         );
 
@@ -462,16 +439,16 @@ app.post("/api/trades/:id/accept", async (req, res) => {
 
         const { rows: ownershipRows } = await client.query(
             `
-      SELECT
-        EXISTS (
-          SELECT 1 FROM claims
-          WHERE photo_id = $1 AND claimed_by = $2
-        ) AS requester_still_owns_offered,
-        EXISTS (
-          SELECT 1 FROM claims
-          WHERE photo_id = $3 AND claimed_by = $4
-        ) AS recipient_still_owns_requested
-      `,
+                SELECT
+                    EXISTS (
+                        SELECT 1 FROM claims
+                        WHERE photo_id = $1 AND claimed_by = $2
+                    ) AS requester_still_owns_offered,
+                    EXISTS (
+                        SELECT 1 FROM claims
+                        WHERE photo_id = $3 AND claimed_by = $4
+                    ) AS recipient_still_owns_requested
+            `,
             [
                 trade.offered_photo_id,
                 trade.requester_id,
@@ -486,11 +463,11 @@ app.post("/api/trades/:id/accept", async (req, res) => {
         ) {
             await client.query(
                 `
-        UPDATE trade_requests
-        SET status = 'expired',
-            responded_at = now()
-        WHERE id = $1
-        `,
+                    UPDATE trade_requests
+                    SET status = 'expired',
+                        responded_at = now()
+                    WHERE id = $1
+                `,
                 [tradeId]
             );
 
@@ -500,31 +477,31 @@ app.post("/api/trades/:id/accept", async (req, res) => {
 
         await client.query(
             `
-      UPDATE claims
-      SET claimed_by = $1,
-          claimed_at = now()
-      WHERE photo_id = $2
-      `,
+                UPDATE claims
+                SET claimed_by = $1,
+                    claimed_at = now()
+                WHERE photo_id = $2
+            `,
             [trade.requester_id, trade.requested_photo_id]
         );
 
         await client.query(
             `
-      UPDATE claims
-      SET claimed_by = $1,
-          claimed_at = now()
-      WHERE photo_id = $2
-      `,
+                UPDATE claims
+                SET claimed_by = $1,
+                    claimed_at = now()
+                WHERE photo_id = $2
+            `,
             [trade.recipient_id, trade.offered_photo_id]
         );
 
         await client.query(
             `
-      UPDATE trade_requests
-      SET status = 'accepted',
-          responded_at = now()
-      WHERE id = $1
-      `,
+                UPDATE trade_requests
+                SET status = 'accepted',
+                    responded_at = now()
+                WHERE id = $1
+            `,
             [tradeId]
         );
 
@@ -547,9 +524,9 @@ app.post("/api/unclaim", async (req, res) => {
 
     const result = await db.query(
         `
-        DELETE FROM claims
-        WHERE photo_id = $1
-          AND claimed_by = $2
+            DELETE FROM claims
+            WHERE photo_id = $1
+              AND claimed_by = $2
         `,
         [photoId, req.user.id]
     );
