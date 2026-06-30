@@ -101,19 +101,38 @@ const Grid = styled.div`
     }
 `;
 
-const Claimed = styled.p`
+const BadgeRow = styled.div`
     position: absolute;
     bottom: 8px;
     right: 8px;
+    display: flex;
+    gap: 6px;
+`;
+
+const Claimed = styled.div<{ $mine?: boolean }>`
     padding: 6px 10px;
     border-radius: 8px;
     font-size: 0.75rem;
     font-weight: 600;
-    background-color: #ffbf1f;
+    background-color: ${({ $mine }) => ($mine ? "#16a34a" : "#ffbf1f")};
+    color: white;
+    opacity: 0.9;
+`;
+
+const TradeButton = styled.button`
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #dc2626;
     color: white;
     border: none;
-    opacity: 0.9;
     cursor: pointer;
+    opacity: 0.9;
+
+    &:hover {
+        opacity: 1;
+    }
 `;
 
 const Title = styled.h1`
@@ -337,21 +356,22 @@ export default function Gallery({ user }: { user: User }) {
                             <SlotBox key={filename}>
                                 <Img src={`/${filename}`} alt={tag} loading="lazy" decoding="async" />
                                 {claim && (
-                                    <Claimed
-                                        onClick={(e) => {
-                                            e.stopPropagation();
+                                    <BadgeRow>
+                                        <Claimed $mine={claim.email === user.email}>
+                                            Claimed
+                                        </Claimed>
 
-                                            if (claim.email === user.email) {
-                                                setInfo("This is your photo.");
-                                                setTimeout(() => setInfo(null), 2500);
-                                                return;
-                                            }
-
-                                            openTrade(claim);
-                                        }}
-                                    >
-                                        {claim.email === user.email ? "Yours" : "Trade"}
-                                    </Claimed>
+                                        {claim.email !== user.email && (
+                                            <TradeButton
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openTrade(claim);
+                                                }}
+                                            >
+                                                Trade
+                                            </TradeButton>
+                                        )}
+                                    </BadgeRow>
                                 )}
                             </SlotBox>
                         );
@@ -388,21 +408,22 @@ export default function Gallery({ user }: { user: User }) {
                                 <SlotBox key={filename}>
                                     <Img src={`/${filename}`} alt={tag} loading="lazy" decoding="async" />
                                     {claim && (
-                                        <Claimed
-                                            onClick={(e) => {
-                                                e.stopPropagation();
+                                        <BadgeRow>
+                                            <Claimed $mine={claim.email === user.email}>
+                                                Claimed
+                                            </Claimed>
 
-                                                if (claim.email === user.email) {
-                                                    setInfo("This is your photo.");
-                                                    setTimeout(() => setInfo(null), 2500);
-                                                    return;
-                                                }
-
-                                                openTrade(claim);
-                                            }}
-                                        >
-                                            {claim.email === user.email ? "Yours" : "Trade"}
-                                        </Claimed>
+                                            {claim.email !== user.email && (
+                                                <TradeButton
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openTrade(claim);
+                                                    }}
+                                                >
+                                                    Trade
+                                                </TradeButton>
+                                            )}
+                                        </BadgeRow>
                                     )}
 
                                 </SlotBox>

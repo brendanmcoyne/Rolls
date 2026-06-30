@@ -113,7 +113,7 @@ export default function Trades() {
             {trades.map((trade) => (
                 <Card key={trade.id}>
                     <p>
-                        <strong>{trade.requester_email}</strong> wants your{" "}
+                        <strong>{trade.requester_email}</strong> wants {" "}
                         <strong>{NAMES[trade.requested_filename] ?? trade.requested_filename}</strong>.
                     </p>
 

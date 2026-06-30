@@ -135,8 +135,8 @@ export default function App() {
                 {view === "rolls" ? (
                     <>
                         <Scrolling />
-                        <Rules />
                         <Rolls />
+                        <Rules />
                     </>
                 ) : view === "claims" ? (
                     <Claims />
