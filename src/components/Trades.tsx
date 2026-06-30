@@ -125,12 +125,12 @@ export default function Trades() {
                     <Row>
                         <div>
                             <p>Your photo</p>
-                            <Img src={`/photos/${trade.requested_filename}`} />
+                            <Img src={`/${trade.requested_filename}`} />
                         </div>
 
                         <div>
                             <p>Their offer</p>
-                            <Img src={`/photos/${trade.offered_filename}`} />
+                            <Img src={`/${trade.offered_filename}`} />
                         </div>
                     </Row>
 
