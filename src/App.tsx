@@ -49,8 +49,8 @@ const Button = styled.button`
         outline: none;
     }
     @media screen and (max-width: 750px) {
-        padding: 8px 10px;
-        font-size: 13px;
+        padding: 6px 8px;
+        font-size: 12px;
     }
 `;
 
