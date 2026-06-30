@@ -48,6 +48,22 @@ const Button = styled.button`
     &:focus {
         outline: none;
     }
+    @media screen and (max-width: 750px) {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+`;
+
+const NavButtons = styled.div`
+    display: flex;
+    gap: 12px;
+
+    @media screen and (max-width: 750px) {
+        width: 100%;
+        justify-content: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
 `;
 
 const TopBar = styled.div`
@@ -57,6 +73,9 @@ const TopBar = styled.div`
     align-items: center;
     justify-content: space-between;
     margin-bottom: 0;
+    @media screen and (max-width: 750px) {
+        justify-content: center;
+    }
 `;
 
 const UserBox = styled.div`
@@ -113,7 +132,7 @@ export default function App() {
                         <div>{user.name}</div>
                     </UserBox>
 
-                    <div style={{ display: "flex", gap: "12px" }}>
+                    <NavButtons>
                         <Button onClick={() => setView("rolls")}>Roll</Button>
                         <Button onClick={() => setView("claims")}>Claims</Button>
                         <Button onClick={() => setView("gallery")}>Gallery</Button>
@@ -129,7 +148,7 @@ export default function App() {
                         style={{backgroundColor: "white", color: "black"}}>
                             Sign Out
                         </Button>
-                    </div>
+                    </NavButtons>
                 </TopBar>
 
                 {view === "rolls" ? (
