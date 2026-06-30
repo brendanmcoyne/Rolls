@@ -391,14 +391,17 @@ export default function Gallery({ user }: { user: User }) {
                                         <Claimed
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setInfo(`Claimed by ${claim.email}`);
 
-                                                setTimeout(() => {
-                                                    setInfo(null);
-                                                }, 2500);
+                                                if (claim.email === user.email) {
+                                                    setInfo("This is your photo.");
+                                                    setTimeout(() => setInfo(null), 2500);
+                                                    return;
+                                                }
+
+                                                openTrade(claim);
                                             }}
                                         >
-                                            Claimed
+                                            {claim.email === user.email ? "Yours" : "Trade"}
                                         </Claimed>
                                     )}
 
