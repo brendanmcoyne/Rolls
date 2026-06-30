@@ -10,6 +10,18 @@ type Claim = {
     email: string;
 };
 
+type MyClaim = {
+    id: number;
+    filename: string;
+    claimed_at: string;
+};
+
+type User = {
+    id: number;
+    email: string;
+    name: string;
+};
+
 const Wrapper = styled.div`
     max-width: 1200px;
     margin: 0 auto;
@@ -184,11 +196,15 @@ const PageText = styled.div`
     opacity: 0.85;
 `;
 
-export default function Gallery() {
+export default function Gallery({ user }: { user: User }) {
     const [query, setQuery] = useState("");
     const [activeTag, setActiveTag] = useState<string | null>(null);
     const [claims, setClaims] = useState<Claim[]>([]);
     const [info, setInfo] = useState<string | null>(null);
+
+    const [myClaims, setMyClaims] = useState<MyClaim[]>([]);
+    const [tradeTarget, setTradeTarget] = useState<Claim | null>(null);
+    const [offeredPhotoId, setOfferedPhotoId] = useState<number | null>(null);
 
     const PHOTOS_PER_PAGE = 40;
     const [page, setPage] = useState(0);
@@ -255,6 +271,45 @@ export default function Gallery() {
         return Object.entries(NAMES).filter(([, tag]) => tag === activeTag);
     }, [activeTag]);
 
+    async function openTrade(claim: Claim) {
+        const res = await fetch(`${API}/api/my-claims`, {
+            credentials: "include",
+        });
+
+        const data = await res.json();
+
+        setMyClaims(data.cards ?? []);
+        setTradeTarget(claim);
+        setOfferedPhotoId(null);
+    }
+
+    async function sendTrade() {
+        if (!tradeTarget || !offeredPhotoId) return;
+
+        const res = await fetch(`${API}/api/trades`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                requestedPhotoId: tradeTarget.id,
+                offeredPhotoId,
+            }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            setInfo(data.error ?? "Could not send trade");
+            return;
+        }
+
+        setTradeTarget(null);
+        setInfo("Trade request sent!");
+        setTimeout(() => setInfo(null), 2500);
+    }
+
     return (
         <Wrapper>
             <Title>Gallery</Title>
@@ -285,11 +340,17 @@ export default function Gallery() {
                                     <Claimed
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            setInfo(`Claimed by ${claim.email}`);
-                                            setTimeout(() => setInfo(null), 2500);
+
+                                            if (claim.email === user.email) {
+                                                setInfo("This is your photo.");
+                                                setTimeout(() => setInfo(null), 2500);
+                                                return;
+                                            }
+
+                                            openTrade(claim);
                                         }}
                                     >
-                                        Claimed
+                                        {claim.email === user.email ? "Yours" : "Trade"}
                                     </Claimed>
                                 )}
                             </SlotBox>
@@ -348,6 +409,62 @@ export default function Gallery() {
                 </>
             )}
             {info && <ClaimPopup>{info}</ClaimPopup>}
+
+            {tradeTarget && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.7)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 2000,
+                    }}
+                    onClick={() => setTradeTarget(null)}
+                >
+                    <div
+                        style={{
+                            background: "#111827",
+                            padding: 24,
+                            borderRadius: 16,
+                            width: "90%",
+                            maxWidth: 500,
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h2>Send Trade Request</h2>
+
+                        <p>
+                            You want:{" "}
+                            <strong>{NAMES[tradeTarget.filename] ?? tradeTarget.filename}</strong>
+                        </p>
+
+                        <p>Choose one of your photos to offer:</p>
+
+                        <select
+                            value={offeredPhotoId ?? ""}
+                            onChange={(e) => setOfferedPhotoId(Number(e.target.value))}
+                            style={{ width: "100%", padding: 10, marginBottom: 16 }}
+                        >
+                            <option value="">Select a photo</option>
+                            {myClaims.map((claim) => (
+                                <option key={claim.id} value={claim.id}>
+                                    {NAMES[claim.filename] ?? claim.filename}
+                                </option>
+                            ))}
+                        </select>
+
+                        <button disabled={!offeredPhotoId} onClick={sendTrade}>
+                            Send Trade
+                        </button>
+
+                        <button onClick={() => setTradeTarget(null)} style={{ marginLeft: 8 }}>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </Wrapper>
     );
 }

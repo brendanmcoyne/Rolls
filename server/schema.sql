@@ -43,3 +43,26 @@ CREATE INDEX IF NOT EXISTS idx_claims_claimed_by
 
 CREATE INDEX IF NOT EXISTS idx_claims_user_time
     ON claims (claimed_by, claimed_at DESC);
+
+CREATE TABLE IF NOT EXISTS trade_requests (
+                                              id SERIAL PRIMARY KEY,
+
+                                              requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    requested_photo_id INTEGER NOT NULL REFERENCES photos(id) ON DELETE CASCADE,
+    offered_photo_id INTEGER NOT NULL REFERENCES photos(id) ON DELETE CASCADE,
+
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    responded_at TIMESTAMPTZ,
+
+    CHECK (requester_id <> recipient_id),
+    CHECK (requested_photo_id <> offered_photo_id)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_trade_requests_recipient
+    ON trade_requests(recipient_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_trade_requests_requester
+    ON trade_requests(requester_id, status);

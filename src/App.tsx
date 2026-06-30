@@ -5,6 +5,7 @@ import Scrolling from "./components/Scrolling";
 import Rolls from "./components/Rolls";
 import Claims from "./components/Claims";
 import Gallery from "./components/Gallery";
+import Trades from "./components/Trades";
 
 const API = "";
 type User = { id: number; email: string; name: string; picture?: string | null };
@@ -75,7 +76,7 @@ const Avatar = styled.img`
 
 export default function App() {
     const [user, setUser] = useState<User | null | undefined>(undefined);
-    const [view, setView] = useState<"rolls" | "claims" | "gallery">("rolls");
+    const [view, setView] = useState<"rolls" | "claims" | "gallery" | "trades">("rolls");
 
     useEffect(() => {
         fetch(`${API}/api/me`, { credentials: "include" })
@@ -116,6 +117,7 @@ export default function App() {
                         <Button onClick={() => setView("rolls")}>Roll</Button>
                         <Button onClick={() => setView("claims")}>Claims</Button>
                         <Button onClick={() => setView("gallery")}>Gallery</Button>
+                        <Button onClick={() => setView("trades")}>Trades</Button>
                         <Button
                             onClick={async () => {
                                 await fetch(`${API}/api/logout`, {
@@ -132,13 +134,16 @@ export default function App() {
 
                 {view === "rolls" ? (
                     <>
-                        <Rolls />
+                        <Scrolling />
                         <Rules />
+                        <Rolls />
                     </>
                 ) : view === "claims" ? (
                     <Claims />
+                ) : view === "gallery" ? (
+                    <Gallery user={user} />
                 ) : (
-                    <Gallery />
+                    <Trades />
                 )}
             </Page>
         </>

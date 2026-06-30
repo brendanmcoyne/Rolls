@@ -299,6 +299,222 @@ app.get("/api/my-claims", async (req, res) => {
     res.json({ cards: rows });
 });
 
+app.post("/api/trades", async (req, res) => {
+    const requestedPhotoId = Number(req.body?.requestedPhotoId);
+    const offeredPhotoId = Number(req.body?.offeredPhotoId);
+
+    if (!requestedPhotoId || !offeredPhotoId) {
+        return res.status(400).json({ error: "requestedPhotoId and offeredPhotoId required" });
+    }
+
+    if (requestedPhotoId === offeredPhotoId) {
+        return res.status(400).json({ error: "Cannot trade the same photo" });
+    }
+
+    const requesterId = req.user.id;
+
+    const { rows: requestedRows } = await db.query(
+        `
+    SELECT claimed_by
+    FROM claims
+    WHERE photo_id = $1
+    `,
+        [requestedPhotoId]
+    );
+
+    if (!requestedRows.length) {
+        return res.status(404).json({ error: "Requested photo is not claimed" });
+    }
+
+    const recipientId = requestedRows[0].claimed_by;
+
+    if (recipientId === requesterId) {
+        return res.status(400).json({ error: "You already own this photo" });
+    }
+
+    const { rows: offeredRows } = await db.query(
+        `
+    SELECT 1
+    FROM claims
+    WHERE photo_id = $1
+      AND claimed_by = $2
+    `,
+        [offeredPhotoId, requesterId]
+    );
+
+    if (!offeredRows.length) {
+        return res.status(403).json({ error: "You do not own the offered photo" });
+    }
+
+    const { rows } = await db.query(
+        `
+    INSERT INTO trade_requests (
+      requester_id,
+      recipient_id,
+      requested_photo_id,
+      offered_photo_id
+    )
+    VALUES ($1, $2, $3, $4)
+    RETURNING *
+    `,
+        [requesterId, recipientId, requestedPhotoId, offeredPhotoId]
+    );
+
+    res.json({ trade: rows[0] });
+});
+
+app.get("/api/trades/incoming", async (req, res) => {
+    const { rows } = await db.query(
+        `
+    SELECT
+      tr.id,
+      tr.status,
+      tr.created_at,
+      requester.email AS requester_email,
+      requested.filename AS requested_filename,
+      offered.filename AS offered_filename,
+      requested.id AS requested_photo_id,
+      offered.id AS offered_photo_id
+    FROM trade_requests tr
+    JOIN users requester ON requester.id = tr.requester_id
+    JOIN photos requested ON requested.id = tr.requested_photo_id
+    JOIN photos offered ON offered.id = tr.offered_photo_id
+    WHERE tr.recipient_id = $1
+    ORDER BY tr.created_at DESC
+    `,
+        [req.user.id]
+    );
+
+    res.json({ trades: rows });
+});
+
+app.post("/api/trades/:id/reject", async (req, res) => {
+    const tradeId = Number(req.params.id);
+
+    const result = await db.query(
+        `
+    UPDATE trade_requests
+    SET status = 'rejected',
+        responded_at = now()
+    WHERE id = $1
+      AND recipient_id = $2
+      AND status = 'pending'
+    `,
+        [tradeId, req.user.id]
+    );
+
+    if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Trade not found" });
+    }
+
+    res.json({ ok: true });
+});
+
+app.post("/api/trades/:id/accept", async (req, res) => {
+    const tradeId = Number(req.params.id);
+
+    const client = await db.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const { rows } = await client.query(
+            `
+      SELECT *
+      FROM trade_requests
+      WHERE id = $1
+        AND recipient_id = $2
+        AND status = 'pending'
+      FOR UPDATE
+      `,
+            [tradeId, req.user.id]
+        );
+
+        if (!rows.length) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({ error: "Trade not found" });
+        }
+
+        const trade = rows[0];
+
+        const { rows: ownershipRows } = await client.query(
+            `
+      SELECT
+        EXISTS (
+          SELECT 1 FROM claims
+          WHERE photo_id = $1 AND claimed_by = $2
+        ) AS requester_still_owns_offered,
+        EXISTS (
+          SELECT 1 FROM claims
+          WHERE photo_id = $3 AND claimed_by = $4
+        ) AS recipient_still_owns_requested
+      `,
+            [
+                trade.offered_photo_id,
+                trade.requester_id,
+                trade.requested_photo_id,
+                trade.recipient_id,
+            ]
+        );
+
+        if (
+            !ownershipRows[0].requester_still_owns_offered ||
+            !ownershipRows[0].recipient_still_owns_requested
+        ) {
+            await client.query(
+                `
+        UPDATE trade_requests
+        SET status = 'expired',
+            responded_at = now()
+        WHERE id = $1
+        `,
+                [tradeId]
+            );
+
+            await client.query("COMMIT");
+            return res.status(409).json({ error: "One of the photos is no longer owned by the original user" });
+        }
+
+        await client.query(
+            `
+      UPDATE claims
+      SET claimed_by = $1,
+          claimed_at = now()
+      WHERE photo_id = $2
+      `,
+            [trade.requester_id, trade.requested_photo_id]
+        );
+
+        await client.query(
+            `
+      UPDATE claims
+      SET claimed_by = $1,
+          claimed_at = now()
+      WHERE photo_id = $2
+      `,
+            [trade.recipient_id, trade.offered_photo_id]
+        );
+
+        await client.query(
+            `
+      UPDATE trade_requests
+      SET status = 'accepted',
+          responded_at = now()
+      WHERE id = $1
+      `,
+            [tradeId]
+        );
+
+        await client.query("COMMIT");
+
+        res.json({ ok: true });
+    } catch (err) {
+        await client.query("ROLLBACK");
+        res.status(500).json({ error: "Could not accept trade" });
+    } finally {
+        client.release();
+    }
+});
 
 app.post("/api/unclaim", async (req, res) => {
     const photoId = Number(req.body?.photoId);
