@@ -188,6 +188,21 @@ const Img = styled.img`
     }
 `;
 
+const Button = styled.button`
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    background-color: #111827;
+    color: #dddddd;
+
+    @media screen and (max-width: 750px) {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+`;
+
 const PaginationRow = styled.div`
     display: flex;
     justify-content: center;
@@ -253,6 +268,7 @@ export default function Gallery({ user }: { user: User }) {
     const [activeTag, setActiveTag] = useState<string | null>(null);
     const [claims, setClaims] = useState<Claim[]>([]);
     const [info, setInfo] = useState<string | null>(null);
+    const [claimedOnly, setClaimedOnly] = useState(false);
 
     const [myClaims, setMyClaims] = useState<MyClaim[]>([]);
     const [tradeTarget, setTradeTarget] = useState<Claim | null>(null);
@@ -282,12 +298,18 @@ export default function Gallery({ user }: { user: User }) {
         );
     }, []);
 
-    const totalPages = Math.ceil(allPhotos.length / PHOTOS_PER_PAGE);
+    const visiblePhotos = useMemo(() => {
+        if (!claimedOnly) return allPhotos;
+
+        return allPhotos.filter(([filename]) => claimedByFilename.has(filename));
+    }, [allPhotos, claimedOnly, claimedByFilename]);
+
+    const totalPages = Math.ceil(visiblePhotos.length / PHOTOS_PER_PAGE);
 
     const pagedPhotos = useMemo(() => {
         const start = page * PHOTOS_PER_PAGE;
-        return allPhotos.slice(start, start + PHOTOS_PER_PAGE);
-    }, [allPhotos, page]);
+        return visiblePhotos.slice(start, start + PHOTOS_PER_PAGE);
+    }, [visiblePhotos, page]);
 
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -371,6 +393,22 @@ export default function Gallery({ user }: { user: User }) {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                 />
+            </SearchRow>
+
+            <SearchRow>
+                <Button
+                    type="button"
+                    onClick={() => {
+                        setClaimedOnly((v) => !v);
+                        setPage(0);
+                    }}
+                    style={{
+                        backgroundColor: claimedOnly ? "white" : "#1f2937",
+                        color: claimedOnly ? "black" : "white",
+                    }}
+                >
+                    {claimedOnly ? "Show All Photos" : "Show Claimed Photos"}
+                </Button>
             </SearchRow>
 
             {!query.trim() && totalPages > 1 && (
