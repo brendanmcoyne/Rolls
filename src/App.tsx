@@ -93,7 +93,7 @@ const PhotoBackdrop = styled.div`
 
 const PhotoRow = styled.div<{ $tilt: "top" | "bottom" }>`
     width: 100vw;
-    overflow: hidden;
+    overflow: visible;
     transform: ${({ $tilt }) => ($tilt === "top" ? "rotate(-0deg)" : "rotate(0deg)")};
 `;
 
@@ -101,6 +101,7 @@ const PhotoTrack = styled.div<{ $direction: "leftToRight" | "rightToLeft" }>`
     display: flex;
     width: max-content;
     gap: 22px;
+    padding: 30px 0;
     animation: ${({ $direction }) =>
     $direction === "leftToRight" ? moveLeftToRight : moveRightToLeft}
         42s linear infinite;
@@ -114,8 +115,9 @@ const FloatingPhoto = styled.img`
     object-position: center;
     flex: 0 0 auto;
     opacity: 1;
-    border: 3px solid rgba(255, 255, 255, 0.90);
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.90);
+    filter: brightness(1.22) contrast(1.12) saturate(1.18);
+    border: 5px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.65);
     @media screen and (max-width: 750px) {
         width: clamp(200px, 11vw, 300px);
         height: clamp(200px, 11vw, 300px);

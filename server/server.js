@@ -388,6 +388,53 @@ app.get("/api/trades/incoming", async (req, res) => {
     res.json({ trades: rows });
 });
 
+app.get("/api/trades/outgoing", async (req, res) => {
+    const { rows } = await db.query(
+        `
+        SELECT
+            tr.id,
+            tr.status,
+            tr.created_at,
+            recipient.email AS recipient_email,
+            requested.filename AS requested_filename,
+            offered.filename AS offered_filename,
+            requested.id AS requested_photo_id,
+            offered.id AS offered_photo_id
+        FROM trade_requests tr
+        JOIN users recipient ON recipient.id = tr.recipient_id
+        JOIN photos requested ON requested.id = tr.requested_photo_id
+        JOIN photos offered ON offered.id = tr.offered_photo_id
+        WHERE tr.requester_id = $1
+        ORDER BY tr.created_at DESC
+        `,
+        [req.user.id]
+    );
+
+    res.json({ trades: rows });
+});
+
+app.post("/api/trades/:id/withdraw", async (req, res) => {
+    const tradeId = Number(req.params.id);
+
+    const result = await db.query(
+        `
+            UPDATE trade_requests
+            SET status = 'withdrawn',
+                responded_at = now()
+            WHERE id = $1
+              AND requester_id = $2
+              AND status = 'pending'
+        `,
+        [tradeId, req.user.id]
+    );
+
+    if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Trade not found" });
+    }
+
+    res.json({ ok: true });
+});
+
 app.post("/api/trades/:id/reject", async (req, res) => {
     const tradeId = Number(req.params.id);
 

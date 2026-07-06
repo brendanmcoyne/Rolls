@@ -31,9 +31,9 @@ const SlotBox = styled.div<{ $selected?: boolean; $disabled?: boolean }>`
     border: ${(p) => (p.$selected ? "3px solid white" : "none")};
     opacity: ${(p) => (p.$disabled ? 0.5 : 1)};
 
-    @media screen and (max-width: 750px) {
-        width: 150px;
-        height: 150px;
+    @media screen and (max-width: 850px) {
+        width: 175px;
+        height: 175px;
     }
 `;
 
