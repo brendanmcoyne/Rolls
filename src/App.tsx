@@ -77,24 +77,24 @@ const PhotoBackdrop = styled.div`
         inset: 0;
         z-index: 3;
         background:
-            radial-gradient(
-                circle at center,
-                rgba(17, 24, 39, 0.25),
-                rgba(17, 24, 39, 0.88)
-            ),
-            linear-gradient(
-                to bottom,
-                rgba(17, 24, 39, 0.8),
-                rgba(17, 24, 39, 0.35),
-                rgba(17, 24, 39, 0.8)
-            );
+                radial-gradient(
+                        circle at center,
+                        rgba(17, 24, 39, 0.2),
+                        rgba(17, 24, 39, 0.2)
+                ),
+                linear-gradient(
+                        to bottom,
+                        rgba(17, 24, 39, 0.2),
+                        rgba(17, 24, 39, 0.2),
+                        rgba(17, 24, 39, 0.2)
+                );
     }
 `;
 
 const PhotoRow = styled.div<{ $tilt: "top" | "bottom" }>`
     width: 100vw;
     overflow: hidden;
-    transform: ${({ $tilt }) => ($tilt === "top" ? "rotate(-2deg)" : "rotate(2deg)")};
+    transform: ${({ $tilt }) => ($tilt === "top" ? "rotate(-0deg)" : "rotate(0deg)")};
 `;
 
 const PhotoTrack = styled.div<{ $direction: "leftToRight" | "rightToLeft" }>`
@@ -107,15 +107,19 @@ const PhotoTrack = styled.div<{ $direction: "leftToRight" | "rightToLeft" }>`
 `;
 
 const FloatingPhoto = styled.img`
-    width: clamp(130px, 11vw, 220px);
-    height: clamp(130px, 11vw, 220px);
+    width: clamp(330px, 11vw, 490px);
+    height: clamp(330px, 11vw, 490px);
     border-radius: 999px;
     object-fit: cover;
     object-position: center;
     flex: 0 0 auto;
-    opacity: 0.72;
-    border: 3px solid rgba(255, 255, 255, 0.35);
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+    opacity: 1;
+    border: 3px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.90);
+    @media screen and (max-width: 750px) {
+        width: clamp(200px, 11vw, 300px);
+        height: clamp(200px, 11vw, 300px);
+    }
 `;
 
 const LoginContent = styled.div`
@@ -297,7 +301,7 @@ export default function App() {
 
                 <LoginContent>
                     <LoginTitle>Pasta Rolls</LoginTitle>
-                    <LoginText>You must sign in to use the site.</LoginText>
+                    <LoginText>Click to log in!</LoginText>
 
                     <a href={`${API}/api/auth/google`}>
                         <SignInButton>Sign in</SignInButton>
