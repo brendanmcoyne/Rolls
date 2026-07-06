@@ -18,8 +18,7 @@ const Grid = styled.div`
     }
 `;
 
-
-const SlotBox = styled.div<{ selected?: boolean; disabled?: boolean }>`
+const SlotBox = styled.div<{ $selected?: boolean; $disabled?: boolean }>`
     width: 260px;
     height: 260px;
     background-color: #374151;
@@ -28,9 +27,10 @@ const SlotBox = styled.div<{ selected?: boolean; disabled?: boolean }>`
     overflow: hidden;
     align-items: center;
     justify-content: center;
-    cursor: ${(p) => (p.disabled ? "not-allowed" : "pointer")};
-    border: ${(p) => (p.selected ? "3px solid white" : "none")};
-    opacity: ${(p) => (p.disabled ? 0.5 : 1)};
+    cursor: ${(p) => (p.$disabled ? "not-allowed" : "pointer")};
+    border: ${(p) => (p.$selected ? "3px solid white" : "none")};
+    opacity: ${(p) => (p.$disabled ? 0.5 : 1)};
+
     @media screen and (max-width: 750px) {
         width: 150px;
         height: 150px;
@@ -55,6 +55,77 @@ const Button = styled.button<{ $red?: boolean }>`
     font-size: 18px;
     background: ${(p) => (p.$red ? "#dc2626" : "#2563eb")};
     color: white;
+    border: none;
+    cursor: pointer;
+
+    &:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+`;
+
+const Message = styled.p`
+    margin-top: 16px;
+    color: #facc15;
+    font-size: 18px;
+    font-weight: 600;
+`;
+
+const PopupOverlay = styled.div`
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+`;
+
+const PopupCard = styled.div`
+    width: min(90vw, 420px);
+    background: #111827;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 24px;
+    padding: 28px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.7);
+`;
+
+const PopupImage = styled.img`
+    width: 92px;
+    height: 92px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 3px solid white;
+    margin-bottom: 16px;
+`;
+
+const PopupTitle = styled.h2`
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.2;
+
+    @media screen and (max-width: 750px) {
+        font-size: 22px;
+    }
+`;
+
+const PopupButton = styled.button`
+    margin-top: 22px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: none;
+    background: white;
+    color: #111827;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-1px);
+    }
 `;
 
 export default function Rolls() {
@@ -64,13 +135,22 @@ export default function Rolls() {
     const [selected, setSelected] = useState<number | null>(null);
     const [locked, setLocked] = useState(false);
     const [msg, setMsg] = useState<string | null>(null);
+    const [claimedPhoto, setClaimedPhoto] = useState<Slot>(null);
+
+    const getPhotoName = (filename: string) => {
+        return NAMES[filename] ?? filename;
+    };
 
     const startRoll = async () => {
         setMsg(null);
         setLocked(false);
         setSelected(null);
+        setClaimedPhoto(null);
 
-        const res = await fetch(`${API}/api/roll?n=6`, {credentials: "include",});
+        const res = await fetch(`${API}/api/roll?n=6`, {
+            credentials: "include",
+        });
+
         const data = await res.json();
 
         const newSlots: Slot[] = Array(6).fill(null);
@@ -89,6 +169,7 @@ export default function Rolls() {
 
         const copy = [...slots];
         copy[index] = rolled[index];
+
         setSlots(copy);
         setIndex(index + 1);
     };
@@ -109,21 +190,19 @@ export default function Rolls() {
         if (res.status === 429) {
             const data = await res.json();
             const reset = new Date(data.retryAt);
+
             setMsg(`You can claim again at ${reset.toLocaleTimeString()}`);
             setLocked(true);
             return;
         }
 
-        const getClaimMessage = (filename: string) => {
-            const name = NAMES[filename] ?? filename;
+        if (!res.ok) {
+            setMsg("Something went wrong while claiming this photo.");
+            return;
+        }
 
-            if (name === "Bros") return "You claimed the Bros!";
-            if (name === "Party") return "You claimed a Party!";
-
-            return `You claimed ${name}!`;
-        };
-
-        setMsg(getClaimMessage(slot.filename));
+        setClaimedPhoto(slot);
+        setMsg(null);
         setLocked(true);
     };
 
@@ -133,11 +212,15 @@ export default function Rolls() {
                 {slots.map((slot, i) => (
                     <SlotBox
                         key={i}
-                        selected={selected === i}
-                        disabled={!slot || locked}
+                        $selected={selected === i}
+                        $disabled={!slot || locked}
                         onClick={() => slot && !locked && setSelected(i)}
                     >
-                        {slot ? <Img src={`/${slot.filename}`} /> : "Empty"}
+                        {slot ? (
+                            <Img src={`/${slot.filename}`} alt={getPhotoName(slot.filename)} />
+                        ) : (
+                            "Empty"
+                        )}
                     </SlotBox>
                 ))}
             </Grid>
@@ -148,11 +231,32 @@ export default function Rolls() {
                 ) : index < rolled.length ? (
                     <Button onClick={revealNext}>Roll</Button>
                 ) : (
-                    <Button $red onClick={claim}>Claim</Button>
+                    <Button $red onClick={claim} disabled={selected === null || locked}>
+                        Claim
+                    </Button>
                 )}
             </ButtonRow>
 
-            {msg && <p>{msg}</p>}
+            {msg && <Message>{msg}</Message>}
+
+            {claimedPhoto && (
+                <PopupOverlay onClick={() => setClaimedPhoto(null)}>
+                    <PopupCard onClick={(e) => e.stopPropagation()}>
+                        <PopupImage
+                            src={`/${claimedPhoto.filename}`}
+                            alt={getPhotoName(claimedPhoto.filename)}
+                        />
+
+                        <PopupTitle>
+                            Congrats on claiming {getPhotoName(claimedPhoto.filename)}!
+                        </PopupTitle>
+
+                        <PopupButton onClick={() => setClaimedPhoto(null)}>
+                            Awesome
+                        </PopupButton>
+                    </PopupCard>
+                </PopupOverlay>
+            )}
         </>
     );
 }
