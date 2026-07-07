@@ -16,10 +16,12 @@ const Page = styled.div`
 `;
 
 const Title = styled.h1`
-    font-size: 2rem;
     font-weight: 700;
     margin-bottom: 24px;
     text-align: center;
+    font-size: clamp(3rem, 9vw, 7rem);
+    line-height: 0.95;
+    letter-spacing: -0.08em;
 `;
 
 const Grid = styled.div`

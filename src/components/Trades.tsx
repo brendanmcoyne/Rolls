@@ -17,14 +17,23 @@ type TradeTab = "incoming" | "outgoing";
 
 const Wrapper = styled.div`
     max-width: 900px;
-    width: 100%;
     margin: 0 auto;
+    width: 100%;
 `;
 
 const Tabs = styled.div`
     display: flex;
     gap: 12px;
     margin-bottom: 20px;
+`;
+
+const Title = styled.h1`
+    font-weight: 700;
+    margin-bottom: 24px;
+    text-align: center;
+    font-size: clamp(3rem, 9vw, 7rem);
+    line-height: 0.95;
+    letter-spacing: -0.08em;
 `;
 
 const TabButton = styled.button<{ $active?: boolean }>`
@@ -35,6 +44,7 @@ const TabButton = styled.button<{ $active?: boolean }>`
     color: ${(p) => (p.$active ? "#111827" : "white")};
     font-weight: 800;
     cursor: pointer;
+    justify-content: center;
 
     &:hover {
         transform: translateY(-1px);
@@ -198,7 +208,7 @@ export default function Trades() {
 
     return (
         <Wrapper>
-            <h1>Trades</h1>
+            <Title>Trades</Title>
 
             <Tabs>
                 <TabButton

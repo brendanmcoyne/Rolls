@@ -22,10 +22,10 @@ type User = {
     name: string;
 };
 
-const Wrapper = styled.div`
+const Page = styled.div`
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 16px;
 `;
 
 const SearchRow = styled.div`
@@ -137,10 +137,12 @@ const TradeButton = styled.button`
 `;
 
 const Title = styled.h1`
-    font-size: 2rem;
     font-weight: 700;
     margin-bottom: 24px;
     text-align: center;
+    font-size: clamp(3rem, 9vw, 7rem);
+    line-height: 0.95;
+    letter-spacing: -0.08em;
 `;
 
 const ClaimPopup = styled.div`
@@ -385,7 +387,7 @@ export default function Gallery({ user }: { user: User }) {
     }
 
     return (
-        <Wrapper>
+        <Page>
             <Title>Gallery</Title>
             <SearchRow>
                 <Search
@@ -589,6 +591,6 @@ export default function Gallery({ user }: { user: User }) {
                     </div>
                 </div>
             )}
-        </Wrapper>
+        </Page>
     );
 }
