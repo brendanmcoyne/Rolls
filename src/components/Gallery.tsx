@@ -96,7 +96,8 @@ const Grid = styled.div`
     grid-template-columns: repeat(4, 250px);
     gap: 16px;
     @media screen and (max-width: 750px) {
-        grid-template-columns: repeat(2, minmax(200px, 1fr));
+        gap: 8px;
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
     }
 `;
 
