@@ -25,6 +25,7 @@ const Tabs = styled.div`
     display: flex;
     gap: 12px;
     margin-bottom: 20px;
+    justify-content: center;
 `;
 
 const Title = styled.h1`
@@ -44,7 +45,6 @@ const TabButton = styled.button<{ $active?: boolean }>`
     color: ${(p) => (p.$active ? "#111827" : "white")};
     font-weight: 800;
     cursor: pointer;
-    justify-content: center;
 
     &:hover {
         transform: translateY(-1px);

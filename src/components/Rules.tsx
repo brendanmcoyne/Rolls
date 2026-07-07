@@ -12,15 +12,16 @@ const Wrapper = styled.div`
 
 const DescriptionHeader = styled.h2`
     font-size: 40px;
+    margin-bottom: 10px;
 `;
 
 const PhotoStats = styled.div`
-    margin-top: 24px;
-    padding: 14px 18px;
+    margin-top: 30px;
+    padding: 20px 18px;
     border-radius: 12px;
     background-color: #1f2937;
     color: white;
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
 `;
 
@@ -65,7 +66,7 @@ export default function Rules() {
                 into the list of available photos.
             </p>
 
-            <p>
+            <p style={{marginBottom: "30px"}}>
                 The Claims tab shows every photo you have claimed connected to your
                 Google account. The Gallery tab shows every photo that can be found, and
                 which have already been claimed.
