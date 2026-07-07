@@ -46,7 +46,7 @@ const GroupGrid = styled.div`
     gap: 16px;
     justify-content: center;
     @media screen and (max-width: 750px) {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        grid-template-columns: repeat(2, minmax(200px, 1fr));
     }
 `;
 
@@ -199,8 +199,8 @@ const Button = styled.button`
     color: #dddddd;
 
     @media screen and (max-width: 750px) {
-        padding: 6px 8px;
-        font-size: 12px;
+        padding: 10px;
+        font-size: 14px;
     }
 `;
 

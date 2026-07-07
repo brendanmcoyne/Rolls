@@ -119,8 +119,8 @@ const FloatingPhoto = styled.img`
     border: 5px solid rgba(255, 255, 255, 0.9);
     box-shadow: 0 28px 80px rgba(0, 0, 0, 0.65);
     @media screen and (max-width: 750px) {
-        width: clamp(200px, 11vw, 300px);
-        height: clamp(200px, 11vw, 300px);
+        width: clamp(250px, 11vw, 365px);
+        height: clamp(250px, 11vw, 365px);
     }
 `;
 
