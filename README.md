@@ -86,7 +86,7 @@ Rolls/
 
 ### Home Page
 
-Login page for the website
+The home page allows users to sign in with their Google account.
 
 ![Home Page](public/readme/Home.png)
 
