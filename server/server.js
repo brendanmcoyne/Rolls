@@ -10,7 +10,7 @@ import { Resend } from "resend";
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY); //For email trading
 
 async function start() {
     await initDb();
