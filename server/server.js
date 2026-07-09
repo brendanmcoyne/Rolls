@@ -5,10 +5,12 @@ import session from "express-session";
 import passport from "./auth.js";
 import { initDb, db } from "./db.js";
 import { requireAuth } from "./authMiddleware.js";
+import { Resend } from "resend";
 
 const app = express();
 
 const PORT = process.env.PORT || 3000;
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function start() {
     await initDb();
@@ -299,6 +301,29 @@ app.get("/api/my-claims", async (req, res) => {
     res.json({ cards: rows });
 });
 
+async function sendTradeRequestEmail({ to, requesterEmail, requestedFilename, offeredFilename }) {
+    if (!process.env.RESEND_API_KEY) {
+        console.warn("RESEND_API_KEY is missing. Trade email not sent.");
+        return;
+    }
+
+    await resend.emails.send({
+        from: "Pasta Rolls <onboarding@resend.dev>",
+        to,
+        subject: "You have a new trade request on Pasta Rolls",
+        html: `
+      <h2>You have a new trade request!</h2>
+      <p><strong>${requesterEmail}</strong> wants to trade with you.</p>
+
+      <p>
+        <a href="${process.env.FRONTEND_URL}/trades">
+          View trade request
+        </a>
+      </p>
+    `,
+    });
+}
+
 app.post("/api/trades", async (req, res) => {
     const requestedPhotoId = Number(req.body?.requestedPhotoId);
     const offeredPhotoId = Number(req.body?.offeredPhotoId);
@@ -360,7 +385,39 @@ app.post("/api/trades", async (req, res) => {
         [requesterId, recipientId, requestedPhotoId, offeredPhotoId]
     );
 
-    res.json({ trade: rows[0] });
+    const trade = rows[0];
+
+    try {
+        const { rows: emailRows } = await db.query(
+            `
+    SELECT
+      recipient.email AS recipient_email,
+      requester.email AS requester_email,
+      requested.filename AS requested_filename,
+      offered.filename AS offered_filename
+    FROM trade_requests tr
+    JOIN users recipient ON recipient.id = tr.recipient_id
+    JOIN users requester ON requester.id = tr.requester_id
+    JOIN photos requested ON requested.id = tr.requested_photo_id
+    JOIN photos offered ON offered.id = tr.offered_photo_id
+    WHERE tr.id = $1
+    `,
+            [trade.id]
+        );
+
+        const emailInfo = emailRows[0];
+
+        await sendTradeRequestEmail({
+            to: emailInfo.recipient_email,
+            requesterEmail: emailInfo.requester_email,
+            requestedFilename: emailInfo.requested_filename,
+            offeredFilename: emailInfo.offered_filename,
+        });
+    } catch (emailError) {
+        console.error("Trade request was created, but email failed:", emailError);
+    }
+
+    res.json({ trade });
 });
 
 app.get("/api/trades/incoming", async (req, res) => {
