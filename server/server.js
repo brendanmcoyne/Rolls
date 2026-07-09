@@ -301,27 +301,60 @@ app.get("/api/my-claims", async (req, res) => {
     res.json({ cards: rows });
 });
 
+app.get("/api/test-email", async (req, res) => {
+    try {
+        if (!resend) {
+            return res.status(500).json({ error: "Resend is not configured" });
+        }
+
+        const { data, error } = await resend.emails.send({
+            from: "Pasta Rolls <onboarding@resend.dev>",
+            to: "bmcoyne@bu.edu",
+            subject: "Test email from Pasta Rolls",
+            html: "<strong>If you got this, Resend is working.</strong>",
+        });
+
+        if (error) {
+            console.error("Test email failed:", error);
+            return res.status(500).json({ error });
+        }
+
+        console.log("Test email sent:", data);
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error("Test email crashed:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 async function sendTradeRequestEmail({ to, requesterEmail, requestedFilename, offeredFilename }) {
     if (!process.env.RESEND_API_KEY) {
         console.warn("RESEND_API_KEY is missing. Trade email not sent.");
         return;
     }
 
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
         from: "Pasta Rolls <onboarding@resend.dev>",
         to,
         subject: "You have a new trade request on Pasta Rolls",
         html: `
-      <h2>You have a new trade request!</h2>
-      <p><strong>${requesterEmail}</strong> wants to trade with you.</p>
+    <h2>You have a new trade request!</h2>
+    <p><strong>${requesterEmail}</strong> wants to trade with you.</p>
 
-      <p>
-        <a href="${process.env.FRONTEND_URL}/trades">
-          View trade request
-        </a>
-      </p>
-    `,
+    <p>
+      <a href="${process.env.FRONTEND_URL}">
+        View trade request
+      </a>
+    </p>
+  `,
     });
+
+    if (error) {
+        console.error("Resend email error:", error);
+        return;
+    }
+
+    console.log("Trade email sent:", data);
 }
 
 app.post("/api/trades", async (req, res) => {
