@@ -10,7 +10,33 @@ import { Resend } from "resend";
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-const resend = new Resend(process.env.RESEND_API_KEY); //For email trading
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+app.get("/api/test-email", async (req, res) => {
+    try {
+        if (!resend) {
+            return res.status(500).json({ error: "Resend is not configured" });
+        }
+
+        const { data, error } = await resend.emails.send({
+            from: "Pasta Rolls <onboarding@resend.dev>",
+            to: "YOUR_EMAIL_HERE",
+            subject: "Test email from Pasta Rolls",
+            html: "<strong>If you got this, Resend is working.</strong>",
+        });
+
+        if (error) {
+            console.error("Test email failed:", error);
+            return res.status(500).json({ error });
+        }
+
+        console.log("Test email sent:", data);
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error("Test email crashed:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 async function start() {
     await initDb();
@@ -299,32 +325,6 @@ app.get("/api/my-claims", async (req, res) => {
     );
 
     res.json({ cards: rows });
-});
-
-app.get("/api/test-email", async (req, res) => {
-    try {
-        if (!resend) {
-            return res.status(500).json({ error: "Resend is not configured" });
-        }
-
-        const { data, error } = await resend.emails.send({
-            from: "Pasta Rolls <onboarding@resend.dev>",
-            to: "bmcoyne@bu.edu",
-            subject: "Test email from Pasta Rolls",
-            html: "<strong>If you got this, Resend is working.</strong>",
-        });
-
-        if (error) {
-            console.error("Test email failed:", error);
-            return res.status(500).json({ error });
-        }
-
-        console.log("Test email sent:", data);
-        res.json({ success: true, data });
-    } catch (err) {
-        console.error("Test email crashed:", err);
-        res.status(500).json({ error: err.message });
-    }
 });
 
 async function sendTradeRequestEmail({ to, requesterEmail, requestedFilename, offeredFilename }) {
