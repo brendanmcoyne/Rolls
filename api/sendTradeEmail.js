@@ -1,14 +1,40 @@
 import nodemailer from "nodemailer";
+import crypto from "node:crypto";
 
 export default async function handler(req, res) {
     if (req.method !== "POST") {
-        return res.status(405).json({ error: "Method not allowed" });
+        return res.status(405).json({
+            error: "Method not allowed",
+        });
     }
 
-    const authorization = req.headers.authorization;
+    const expectedSecret = String(
+        process.env.EMAIL_RELAY_SECRET ?? ""
+    ).trim();
 
-    if (authorization !== `Bearer ${process.env.EMAIL_RELAY_SECRET}`) {
-        return res.status(401).json({ error: "Unauthorized" });
+    const authorizationHeader = Array.isArray(
+        req.headers.authorization
+    )
+        ? req.headers.authorization[0]
+        : String(req.headers.authorization ?? "");
+
+    const receivedSecret = authorizationHeader.startsWith("Bearer ")
+        ? authorizationHeader.slice(7).trim()
+        : "";
+
+    console.log("Email relay authorization:", {
+        expectedSecretExists: Boolean(expectedSecret),
+        expectedSecretLength: expectedSecret.length,
+        expectedFingerprint: fingerprint(expectedSecret),
+        receivedSecretExists: Boolean(receivedSecret),
+        receivedSecretLength: receivedSecret.length,
+        receivedFingerprint: fingerprint(receivedSecret),
+    });
+
+    if (!secretsMatch(receivedSecret, expectedSecret)) {
+        return res.status(401).json({
+            error: "Unauthorized",
+        });
     }
 
     const {
@@ -24,28 +50,67 @@ export default async function handler(req, res) {
         !requestedFilename ||
         !offeredFilename
     ) {
-        return res.status(400).json({ error: "Missing email information" });
+        return res.status(400).json({
+            error: "Missing email information",
+        });
     }
 
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-        console.error("Gmail environment variables are missing");
-        return res.status(500).json({ error: "Email is not configured" });
+    const gmailUser = String(
+        process.env.GMAIL_USER ?? ""
+    ).trim();
+
+    const gmailAppPassword = String(
+        process.env.GMAIL_APP_PASSWORD ?? ""
+    ).trim();
+
+    const frontendUrl = String(
+        process.env.FRONTEND_URL ?? ""
+    ).trim();
+
+    if (!gmailUser || !gmailAppPassword) {
+        console.error("Gmail environment variables are missing", {
+            hasGmailUser: Boolean(gmailUser),
+            hasGmailAppPassword: Boolean(gmailAppPassword),
+        });
+
+        return res.status(500).json({
+            error: "Email is not configured",
+        });
+    }
+
+    if (!frontendUrl) {
+        console.error("FRONTEND_URL is missing");
+
+        return res.status(500).json({
+            error: "Frontend URL is not configured",
+        });
     }
 
     const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_APP_PASSWORD,
+            user: gmailUser,
+            pass: gmailAppPassword,
         },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000,
     });
 
     try {
+        console.log("Attempting to send trade email:", {
+            to,
+            requesterEmail,
+            requestedFilename,
+            offeredFilename,
+        });
+
         const info = await transporter.sendMail({
-            from: `"Pasta Rolls" <${process.env.GMAIL_USER}>`,
+            from: `"Pasta Rolls" <${gmailUser}>`,
             to,
             replyTo: requesterEmail,
             subject: "You have a new trade request on Pasta Rolls",
+
             text: `
 You have a new trade request on Pasta Rolls.
 
@@ -55,16 +120,30 @@ They want: ${requestedFilename}
 They are offering: ${offeredFilename}
 
 View the trade request:
-${process.env.FRONTEND_URL}
+${frontendUrl}
             `.trim(),
+
             html: `
                 <h2>You have a new trade request on Pasta Rolls</h2>
-                <p><strong>${escapeHtml(requesterEmail)}</strong> wants to trade with you.</p>
-                <p><strong>They want:</strong> ${escapeHtml(requestedFilename)}</p>
-                <p><strong>They are offering:</strong> ${escapeHtml(offeredFilename)}</p>
+
+                <p>
+                    <strong>${escapeHtml(requesterEmail)}</strong>
+                    wants to trade with you.
+                </p>
+
+                <p>
+                    <strong>They want:</strong>
+                    ${escapeHtml(requestedFilename)}
+                </p>
+
+                <p>
+                    <strong>They are offering:</strong>
+                    ${escapeHtml(offeredFilename)}
+                </p>
+
                 <p>
                     <a
-                        href="${escapeHtml(process.env.FRONTEND_URL)}"
+                        href="${escapeHtml(frontendUrl)}"
                         style="
                             display: inline-block;
                             background-color: #444444;
@@ -88,7 +167,9 @@ ${process.env.FRONTEND_URL}
             rejected: info.rejected,
         });
 
-        return res.status(200).json({ ok: true });
+        return res.status(200).json({
+            ok: true,
+        });
     } catch (error) {
         console.error("Trade email failed:", error);
 
@@ -96,6 +177,36 @@ ${process.env.FRONTEND_URL}
             error: "Could not send trade email",
         });
     }
+}
+
+function secretsMatch(receivedSecret, expectedSecret) {
+    if (!receivedSecret || !expectedSecret) {
+        return false;
+    }
+
+    const receivedBuffer = Buffer.from(receivedSecret);
+    const expectedBuffer = Buffer.from(expectedSecret);
+
+    if (receivedBuffer.length !== expectedBuffer.length) {
+        return false;
+    }
+
+    return crypto.timingSafeEqual(
+        receivedBuffer,
+        expectedBuffer
+    );
+}
+
+function fingerprint(value) {
+    if (!value) {
+        return null;
+    }
+
+    return crypto
+        .createHash("sha256")
+        .update(value)
+        .digest("hex")
+        .slice(0, 8);
 }
 
 function escapeHtml(value) {
