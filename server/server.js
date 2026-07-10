@@ -19,8 +19,8 @@ app.get("/api/test-email", async (req, res) => {
         }
 
         const { data, error } = await resend.emails.send({
-            from: "Pasta Rolls <onboarding@resend.dev>",
-            to: "bmcoyne@bu.edu",
+            from: "Pasta Rolls <bmcoyne@bu.edu>",
+            to: "brendanmcoyne04@gmail.com",
             subject: "Test email from Pasta Rolls",
             html: "<strong>If you got this, Resend is working.</strong>",
         });
@@ -334,7 +334,7 @@ async function sendTradeRequestEmail({ to, requesterEmail, requestedFilename, of
     }
 
     const { data, error } = await resend.emails.send({
-        from: "Pasta Rolls <onboarding@resend.dev>",
+        from: "Pasta Rolls <bmcoyne@bu.edu>",
         to,
         subject: "You have a new trade request on Pasta Rolls",
         html: `
