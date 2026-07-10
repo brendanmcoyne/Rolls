@@ -112,12 +112,9 @@ export default async function handler(req, res) {
             subject: "You have a new trade request on Pasta Rolls",
 
             text: `
-You have a new trade request on Pasta Rolls.
+You've received a new trade!
 
 From: ${requesterEmail}
-
-They want: ${requestedFilename}
-They are offering: ${offeredFilename}
 
 View the trade request:
 ${frontendUrl}
@@ -127,18 +124,12 @@ ${frontendUrl}
                 <h2>You have a new trade request on Pasta Rolls</h2>
 
                 <p>
+                    You've received a new trade!
+                </p>
+                
+                <p>
                     <strong>${escapeHtml(requesterEmail)}</strong>
                     wants to trade with you.
-                </p>
-
-                <p>
-                    <strong>They want:</strong>
-                    ${escapeHtml(requestedFilename)}
-                </p>
-
-                <p>
-                    <strong>They are offering:</strong>
-                    ${escapeHtml(offeredFilename)}
                 </p>
 
                 <p>
