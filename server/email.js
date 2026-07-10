@@ -1,19 +1,34 @@
 import nodemailer from "nodemailer";
+import dns from "node:dns/promises";
 
-const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    family: 4,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 20000,
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-    },
-});
+async function createGmailTransporter() {
+    const addresses = await dns.resolve4("smtp.gmail.com");
+
+    if (!addresses.length) {
+        throw new Error("Could not resolve smtp.gmail.com to an IPv4 address");
+    }
+
+    const smtpIPv4 = addresses[0];
+
+    console.log("Using Gmail SMTP IPv4:", smtpIPv4);
+
+    return nodemailer.createTransport({
+        host: smtpIPv4,
+        port: 587,
+        secure: false,
+        requireTLS: true,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000,
+        tls: {
+            servername: "smtp.gmail.com",
+        },
+        auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_APP_PASSWORD,
+        },
+    });
+}
 
 export async function sendTradeRequestEmail({
                                                 to,
@@ -32,6 +47,8 @@ export async function sendTradeRequestEmail({
         console.warn("Gmail email settings are missing. Trade email not sent.");
         return;
     }
+
+    const transporter = await createGmailTransporter();
 
     const info = await transporter.sendMail({
         from: `"Pasta Rolls" <${process.env.GMAIL_USER}>`,
