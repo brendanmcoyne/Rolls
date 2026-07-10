@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { NAMES } from "../data/photoNames";
 
@@ -271,6 +271,7 @@ export default function Gallery({ user }: { user: User }) {
     const [claims, setClaims] = useState<Claim[]>([]);
     const [info, setInfo] = useState<string | null>(null);
     const [claimedOnly, setClaimedOnly] = useState(false);
+    const [sendingTrade, setSendingTrade] = useState(false);
 
     const [myClaims, setMyClaims] = useState<MyClaim[]>([]);
     const [tradeTarget, setTradeTarget] = useState<Claim | null>(null);
@@ -278,6 +279,7 @@ export default function Gallery({ user }: { user: User }) {
 
     const PHOTOS_PER_PAGE = 40;
     const [page, setPage] = useState(0);
+    const sendingTradeRef = useRef(false);
 
     useEffect(() => {
         fetch(`${API}/api/claims`, {
@@ -360,30 +362,42 @@ export default function Gallery({ user }: { user: User }) {
     }
 
     async function sendTrade() {
-        if (!tradeTarget || !offeredPhotoId) return;
+        if (!tradeTarget || !offeredPhotoId || sendingTradeRef.current) return;
 
-        const res = await fetch(`${API}/api/trades`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                requestedPhotoId: tradeTarget.id,
-                offeredPhotoId,
-            }),
-        });
+        sendingTradeRef.current = true;
+        setSendingTrade(true);
 
-        const data = await res.json();
+        try {
+            const res = await fetch(`${API}/api/trades`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    requestedPhotoId: tradeTarget.id,
+                    offeredPhotoId,
+                }),
+            });
 
-        if (!res.ok) {
-            setInfo(data.error ?? "Could not send trade");
-            return;
+            const data = await res.json();
+
+            if (!res.ok) {
+                setInfo(data.error ?? "Could not send trade");
+                return;
+            }
+
+            setTradeTarget(null);
+            setOfferedPhotoId(null);
+            setInfo("Trade request sent!");
+            setTimeout(() => setInfo(null), 2500);
+        } catch (err) {
+            console.error("Could not send trade:", err);
+            setInfo("Could not send trade");
+        } finally {
+            sendingTradeRef.current = false;
+            setSendingTrade(false);
         }
-
-        setTradeTarget(null);
-        setInfo("Trade request sent!");
-        setTimeout(() => setInfo(null), 2500);
     }
 
     return (
@@ -581,8 +595,8 @@ export default function Gallery({ user }: { user: User }) {
                             ))}
                         </OfferGrid>
 
-                        <button disabled={!offeredPhotoId} onClick={sendTrade}>
-                            Send Trade
+                        <button disabled={sendingTrade || !offeredPhotoId} onClick={sendTrade}>
+                            {sendingTrade ? "Sending..." : "Send Trade"}
                         </button>
 
                         <button onClick={() => setTradeTarget(null)} style={{ marginLeft: 8 }}>

@@ -365,37 +365,39 @@ app.post("/api/trades", async (req, res) => {
 
     const trade = rows[0];
 
+    res.json({ trade });
+
     try {
         const { rows: emailRows } = await db.query(
             `
-    SELECT
-      recipient.email AS recipient_email,
-      requester.email AS requester_email,
-      requested.filename AS requested_filename,
-      offered.filename AS offered_filename
-    FROM trade_requests tr
-    JOIN users recipient ON recipient.id = tr.recipient_id
-    JOIN users requester ON requester.id = tr.requester_id
-    JOIN photos requested ON requested.id = tr.requested_photo_id
-    JOIN photos offered ON offered.id = tr.offered_photo_id
-    WHERE tr.id = $1
-    `,
+                SELECT
+                    recipient.email AS recipient_email,
+                    requester.email AS requester_email,
+                    requested.filename AS requested_filename,
+                    offered.filename AS offered_filename
+                FROM trade_requests tr
+                         JOIN users recipient ON recipient.id = tr.recipient_id
+                         JOIN users requester ON requester.id = tr.requester_id
+                         JOIN photos requested ON requested.id = tr.requested_photo_id
+                         JOIN photos offered ON offered.id = tr.offered_photo_id
+                WHERE tr.id = $1
+            `,
             [trade.id]
         );
 
         const emailInfo = emailRows[0];
 
-        await sendTradeRequestEmail({
+        sendTradeRequestEmail({
             to: emailInfo.recipient_email,
             requesterEmail: emailInfo.requester_email,
             requestedFilename: emailInfo.requested_filename,
             offeredFilename: emailInfo.offered_filename,
+        }).catch((emailError) => {
+            console.error("Trade request was created, but email failed:", emailError);
         });
     } catch (emailError) {
-        console.error("Trade request was created, but email failed:", emailError);
+        console.error("Could not prepare trade email:", emailError);
     }
-
-    res.json({ trade });
 });
 
 app.get("/api/trades/incoming", async (req, res) => {
