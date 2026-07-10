@@ -33,8 +33,6 @@ async function createGmailTransporter() {
 export async function sendTradeRequestEmail({
                                                 to,
                                                 requesterEmail,
-                                                requestedFilename,
-                                                offeredFilename,
                                             }) {
     console.log("sendTradeRequestEmail called:", {
         to,
@@ -60,19 +58,27 @@ You have a new trade request on Pasta Rolls.
 
 From: ${requesterEmail}
 
-They want: ${requestedFilename}
-They are offering: ${offeredFilename}
-
 View the trade request:
 ${process.env.FRONTEND_URL}
         `.trim(),
         html: `
             <h2>You have a new trade request on Pasta Rolls</h2>
+            <p>You have a new trade!</p>
             <p><strong>${requesterEmail}</strong> wants to trade with you.</p>
-            <p><strong>They want:</strong> ${requestedFilename}</p>
-            <p><strong>They are offering:</strong> ${offeredFilename}</p>
+
+            <p style="margin-top: 30px;">Click below to access the trade!</p>
             <p>
-                <a href="${process.env.FRONTEND_URL}">
+                <a href="${process.env.FRONTEND_URL}"
+                style="
+                        display: inline-block;
+                        background-color: #444444;
+                        color: #ffffff;
+                        padding: 12px 18px;
+                        border-radius: 10px;
+                        text-decoration: none;
+                        font-weight: bold;
+                        font-size: 15px;
+                    ">
                     View trade request
                 </a>
             </p>
