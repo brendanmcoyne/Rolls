@@ -365,7 +365,7 @@ app.post("/api/trades", async (req, res) => {
 
     const trade = rows[0];
 
-    res.json({ trade });
+    let emailInfo = null;
 
     try {
         const { rows: emailRows } = await db.query(
@@ -385,19 +385,29 @@ app.post("/api/trades", async (req, res) => {
             [trade.id]
         );
 
-        const emailInfo = emailRows[0];
+        emailInfo = emailRows[0];
 
+        console.log("Trade email prepared:", {
+            tradeId: trade.id,
+            to: emailInfo?.recipient_email,
+            requester: emailInfo?.requester_email,
+        });
+    } catch (emailError) {
+        console.error("Could not prepare trade email:", emailError);
+    }
+
+    if (emailInfo) {
         sendTradeRequestEmail({
             to: emailInfo.recipient_email,
             requesterEmail: emailInfo.requester_email,
             requestedFilename: emailInfo.requested_filename,
             offeredFilename: emailInfo.offered_filename,
         }).catch((emailError) => {
-            console.error("Trade request was created, but email failed:", emailError);
+            console.error("Trade email failed:", emailError);
         });
-    } catch (emailError) {
-        console.error("Could not prepare trade email:", emailError);
     }
+
+    return res.json({ trade });
 });
 
 app.get("/api/trades/incoming", async (req, res) => {

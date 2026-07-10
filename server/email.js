@@ -14,12 +14,19 @@ export async function sendTradeRequestEmail({
                                                 requestedFilename,
                                                 offeredFilename,
                                             }) {
+    console.log("sendTradeRequestEmail called:", {
+        to,
+        from: process.env.GMAIL_USER,
+        hasGmailUser: Boolean(process.env.GMAIL_USER),
+        hasGmailAppPassword: Boolean(process.env.GMAIL_APP_PASSWORD),
+    });
+
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
         console.warn("Gmail email settings are missing. Trade email not sent.");
         return;
     }
 
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
         from: `"Pasta Rolls" <${process.env.GMAIL_USER}>`,
         to,
         replyTo: requesterEmail,
@@ -48,5 +55,9 @@ ${process.env.FRONTEND_URL}
         `,
     });
 
-    console.log("Trade request email sent to:", to);
+    console.log("Trade email sent:", {
+        messageId: info.messageId,
+        accepted: info.accepted,
+        rejected: info.rejected,
+    });
 }
