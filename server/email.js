@@ -1,97 +1,39 @@
-import nodemailer from "nodemailer";
-import dns from "node:dns/promises";
-
-async function createGmailTransporter() {
-    const addresses = await dns.resolve4("smtp.gmail.com");
-
-    if (!addresses.length) {
-        throw new Error("Could not resolve smtp.gmail.com to an IPv4 address");
-    }
-
-    const smtpIPv4 = addresses[0];
-
-    console.log("Using Gmail SMTP IPv4:", smtpIPv4);
-
-    return nodemailer.createTransport({
-        host: smtpIPv4,
-        port: 587,
-        secure: false,
-        requireTLS: true,
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 20000,
-        tls: {
-            servername: "smtp.gmail.com",
-        },
-        auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_APP_PASSWORD,
-        },
-    });
-}
-
 export async function sendTradeRequestEmail({
                                                 to,
                                                 requesterEmail,
                                                 requestedFilename,
                                                 offeredFilename,
                                             }) {
-    console.log("sendTradeRequestEmail called:", {
-        to,
-        from: process.env.GMAIL_USER,
-        hasGmailUser: Boolean(process.env.GMAIL_USER),
-        hasGmailAppPassword: Boolean(process.env.GMAIL_APP_PASSWORD),
-    });
-
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-        console.warn("Gmail email settings are missing. Trade email not sent.");
-        return;
+    if (!process.env.EMAIL_RELAY_URL) {
+        throw new Error("EMAIL_RELAY_URL is missing");
     }
 
-    const transporter = await createGmailTransporter();
+    if (!process.env.EMAIL_RELAY_SECRET) {
+        throw new Error("EMAIL_RELAY_SECRET is missing");
+    }
 
-    const info = await transporter.sendMail({
-        from: `"Pasta Rolls" <${process.env.GMAIL_USER}>`,
-        to,
-        replyTo: requesterEmail,
-        subject: "You have a new trade request on Pasta Rolls",
-        text: `
-You have a new trade request on Pasta Rolls.
-
-From: ${requesterEmail}
-
-They want: ${requestedFilename}
-They are offering: ${offeredFilename}
-
-View the trade request:
-${process.env.FRONTEND_URL}
-        `.trim(),
-        html: `
-            <h2>You have a new trade request on Pasta Rolls</h2>
-            <p><strong>${requesterEmail}</strong> wants to trade with you.</p>
-            <p><strong>They want:</strong> ${requestedFilename}</p>
-            <p><strong>They are offering:</strong> ${offeredFilename}</p>
-            <p>
-                <a href="${process.env.FRONTEND_URL}"
-                style="
-                        display: inline-block;
-                        background-color: #444444;
-                        color: #ffffff;
-                        padding: 12px 18px;
-                        border-radius: 10px;
-                        text-decoration: none;
-                        font-weight: bold;
-                        font-size: 15px;
-                    ">
-                    View trade request
-                </a>
-            </p>
-        `,
+    const response = await fetch(process.env.EMAIL_RELAY_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.EMAIL_RELAY_SECRET}`,
+        },
+        body: JSON.stringify({
+            to,
+            requesterEmail,
+            requestedFilename,
+            offeredFilename,
+        }),
+        signal: AbortSignal.timeout(15000),
     });
 
-    console.log("Trade email sent:", {
-        messageId: info.messageId,
-        accepted: info.accepted,
-        rejected: info.rejected,
-    });
+    if (!response.ok) {
+        const responseBody = await response.text();
+
+        throw new Error(
+            `Email relay returned ${response.status}: ${responseBody}`
+        );
+    }
+
+    return response.json();
 }
