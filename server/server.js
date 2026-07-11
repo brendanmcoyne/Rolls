@@ -201,9 +201,9 @@ app.post("/api/claim", async (req, res) => {
         [req.user.id]
     );
 
-    if (countRows[0].count >= 20) {
+    if (countRows[0].count >= 24) {
         return res.status(403).json({
-            error: "Maximum of 20 photos claimed",
+            error: "Maximum of 24 photos claimed",
         });
     }
 
